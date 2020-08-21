@@ -2,6 +2,7 @@ from io import BytesIO
 from urllib.request import urlopen
 from zipfile import ZipFile
 import os
+import json
 
 def clean_foldername(address):
   split_address = address.split('/')
@@ -34,6 +35,18 @@ def dl_unzip(address,target):
     print(foldername + " already exists.")
 
 if __name__ == "__main__":
-  if os.path.isfile("data%s.npy" % landmark):
-    new_images = np.load("data%s.npy" % landmark)
-    new_labels = np.load("labels%s.npy" % landmark)
+
+  with open('config.json') as config_file:
+    config = json.load(config_file)
+
+  data_source_train = config['data']['source']['training']
+  data_target_train = config['data']['target']['training']
+  print("Preparing data sources for training.")
+  for data_link in data_source_train:
+    dl_unzip(data_link, data_target_train)
+
+  data_source_test = config['data']['source']['testing']
+  data_target_test = config['data']['target']['testing']
+  print("Preparing data sources for testing.")
+  for data_link in data_source_test:
+    dl_unzip(data_link, data_target_test)
