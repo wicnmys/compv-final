@@ -3,6 +3,11 @@ from urllib.request import urlopen
 from zipfile import ZipFile
 import os
 import json
+import subprocess
+import sys
+
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
 def clean_foldername(address):
   split_address = address.split('/')
@@ -50,3 +55,11 @@ if __name__ == "__main__":
   print("Preparing data sources for testing.")
   for data_link in data_source_test:
     dl_unzip(data_link, data_target_test)
+
+  requirements = open('requirements.txt', 'r')
+  lines = requirements.readlines()
+
+  for package in lines:
+    install(package.strip())
+
+  requirements.close()
