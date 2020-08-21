@@ -56,6 +56,7 @@ if __name__ == "__main__":
   for data_link in data_source_test:
     dl_unzip(data_link, data_target_test)
 
+  print("Installing requirements.")
   requirements = open('requirements.txt', 'r')
   lines = requirements.readlines()
 
