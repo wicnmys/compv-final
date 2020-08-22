@@ -2,10 +2,25 @@
   "data" : {
     "source": {
       "training": [
-        "https://www.dropbox.com/s/2wrkno2e2m9yg8k/buddah.zip?dl=1"
+        "https://www.dropbox.com/sh/z08f8zfj6frmafh/AAB8ISX6xLJGwCOHlr_LXlGEa/Alcatraz_courtyard.zip?dl=1",
+        "https://www.dropbox.com/sh/z08f8zfj6frmafh/AAApS9XxO38sqxDXnk3Dau9wa/buddah.zip?dl=1",
+        "https://www.dropbox.com/sh/z08f8zfj6frmafh/AAAvXtjkm_ReDsNYnueG67E-a/duomo.zip?dl=1",
+        "https://www.dropbox.com/sh/z08f8zfj6frmafh/AADKHz5O5pXyAOa3vnQph8Kpa/eglise_int.zip?dl=1",
+        "https://www.dropbox.com/sh/z08f8zfj6frmafh/AACzzwAYAwqFj1eObdULj_3Na/fine_arts_palace.zip?dl=1",
+        "https://www.dropbox.com/sh/z08f8zfj6frmafh/AABu3sFU2x_rc5e4Vv6gWi4pa/gbg.zip?dl=1",
+        "https://www.dropbox.com/sh/z08f8zfj6frmafh/AAAuEjGaqnl7rRsAyz6n5Ilba/kings_college_front.zip?dl=1",
+        "https://www.dropbox.com/sh/z08f8zfj6frmafh/AACiXSnHYBXY4R4JLeGJuMKsa/linkoping_dkyrka.zip?dl=1",
+        "https://www.dropbox.com/sh/z08f8zfj6frmafh/AABlT0m1h8YB94v0fjNYUkr2a/lund_cath_large.zip?dl=1",
+        "https://www.dropbox.com/sh/z08f8zfj6frmafh/AAApgu_9Wdxmuw1p068meOiaa/plaza_de_armas.zip?dl=1",
+        "https://www.dropbox.com/sh/z08f8zfj6frmafh/AACd1kRP4WlPJB1zEBpd3ICba/pumpkin.zip?dl=1",
+        "https://www.dropbox.com/sh/z08f8zfj6frmafh/AADdsCErEFvAlX0IfP_A5b7Ta/san_marco.zip?dl=1",
+        "https://www.dropbox.com/sh/z08f8zfj6frmafh/AAAhHl-dq8GSBjlMIKovTXZna/Sri_Mariamman.zip?dl=1",
+        "https://www.dropbox.com/sh/z08f8zfj6frmafh/AACBQhi75ThqmpLl6nPFiNJZa/uwo_large.zip?dl=1",
+        "https://www.dropbox.com/sh/z08f8zfj6frmafh/AACP9SctQACa7MtYJfJOMiuqa/west_side.zip?dl=1"
       ],
       "testing": [
-        "https://www.dropbox.com/s/w6foyjgh6ynbyka/test.zip?dl=1"
+        "https://www.dropbox.com/sh/l34j58wj5xpuq79/AADuFLWG8vSQ0r2ZyJQyHS6oa/TestSets_part1.zip?dl=1",
+        "https://www.dropbox.com/sh/l34j58wj5xpuq79/AACiKnSvkpM8y6dG0KVfWxzla/TestSets_part2.zip?dl=1"
       ]
     },
     "target": {
