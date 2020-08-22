@@ -1,1 +1,4 @@
 pyquaternion
+tensorflow
+keras
+numpy
