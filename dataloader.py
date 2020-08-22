@@ -28,6 +28,7 @@ class DataLoader:
 	test_data = []
 	input_shape = []
 	formatting = False
+	debug = True
 
 
 
@@ -49,6 +50,9 @@ class DataLoader:
 		if not landmarks:
 			landmarks = [ name for name in os.listdir(wd) if os.path.isdir(os.path.join(wd, name)) ]
 
+		if self.debug:
+			landmarks = landmarks[0:min(len(landmarks),9)]
+
 		for landmark in landmarks:
 			new_images = []
 			new_labels = []
@@ -61,6 +65,10 @@ class DataLoader:
 				new_labels = np.load("labels%s.npy" % landmark)
 			else:
 				img_folders = glob.glob(landmark_dir + "/*")
+
+				if self.debug:
+					img_folders = img_folders[0:min(len(img_folders), 9)]
+
 				for img_folder in img_folders:
 					file_path = img_folder + "/inputs/"
 					img1 = image.load_img(file_path + "im1.jpg", target_size=(img_rows, img_cols))
@@ -179,23 +187,31 @@ class DataLoader:
 	# returns shuffled training and test data consisting of
 	# lists of image pairs with indicies [pair_num, image_num, width, height, depth]
 	def get_data(self):
-		return self.train_data, self.test_data
+		if self.debug:
+			max_train = min(len(self.train_data), 99)
+			max_test = min(len(self.test_data), 99)
+		return self.train_data[0:max_train], self.test_data[0:max_test]
 
 	# returns shuffled training and test labels with form:
 	# [x, y, z, q1, q2, q3, q4]
 	def get_labels(self):
-		return self.train_labels, self.test_labels
+		if self.debug:
+			max_train = min(len(self.train_labels), 99)
+			max_test = min(len(self.test_labels), 99)
+		return self.train_labels[0:max_train], self.test_labels[0:max_test]
 
 	def get_input_shape(self):
 		return self.input_shape
 
-	def __init__(self, landmarks, img_rows, img_cols):
+	def __init__(self, landmarks, img_rows, img_cols, debug):
 		# preprocess input
 		if K.image_data_format() == 'channels_first':
 			self.input_shape = (3, img_rows, img_cols)
 		else:
 			self.input_shape = (img_rows, img_cols, 3)
 			formatting = True
+
+		self.debug = debug
 
 		self.train_data, self.train_labels = self.__load_data("train",landmarks, img_rows, img_cols)
 		self.test_data, self.test_labels = self.__load_data("test",landmarks, img_rows, img_cols)

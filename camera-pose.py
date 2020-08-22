@@ -12,6 +12,7 @@ import pickle
 import keras
 import math
 import os
+import json
 
 from keras.models import Sequential, Model, load_model
 from keras.layers import Dense, Dropout, Activation, Flatten
@@ -75,12 +76,19 @@ def create_conv_branch(input_shape):
 
 if __name__ == "__main__":
 
+	with open('config.json') as config_file:
+		config = json.load(config_file)
+
+	debug = config['debug']
+	if not isinstance(debug, bool):
+		debug = True
+
 	img_rows, img_cols = 227, 227
 	category_IDs = []
 	model_name = 'huge_model_10epoch.h5'
 	model = None
 	# load training and testing data:
-	loader = DataLoader(category_IDs, img_rows, img_cols)
+	loader = DataLoader(category_IDs, img_rows, img_cols,debug)
 	train_data, test_data = loader.get_data()
 	train_labels, test_labels = loader.get_labels()
 	input_shape = loader.get_input_shape()

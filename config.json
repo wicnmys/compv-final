@@ -12,5 +12,6 @@
       "training": "data/train",
       "testing": "data/test"
     }
-  }
+  },
+  "debug" : true
 }
