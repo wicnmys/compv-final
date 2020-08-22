@@ -47,7 +47,7 @@ class DataLoader:
 		print('Change directory to ' + os.getcwd())
 		wd = os.getcwd()
 		if not landmarks:
-			landmarks = glob.glob(wd + "/*")
+			landmarks = [ name for name in os.listdir(wd) if os.path.isdir(os.path.join(wd, name)) ]
 
 		for landmark in landmarks:
 			new_images = []
@@ -69,12 +69,12 @@ class DataLoader:
 					img2 = image.load_img(file_path + "im2.jpg", target_size=(img_rows, img_cols))
 					img_array2 = image.img_to_array(img2)
 
-					if not self.formatting:
-						img_array1 = img_array1.reshape(img_array1.shape[0], 3, img_rows, img_cols)
-						img_array2 = img_array2.reshape(img_array2.shape[0], 3, img_rows, img_cols)
-					else:
-						img_array1 = img_array1.reshape(img_array1.shape[0], img_rows, img_cols,3)
-						img_array2 = img_array2.reshape(img_array2.shape[0], img_rows, img_cols,3)
+					#if not self.formatting:
+					#	img_array1 = img_array1.reshape(img_array1.shape[0], 3, img_rows, img_cols)
+					#	img_array2 = img_array2.reshape(img_array2.shape[0], 3, img_rows, img_cols)
+					#else:
+					#	img_array1 = img_array1.reshape(img_array1.shape[0], img_rows, img_cols,3)
+					#	img_array2 = img_array2.reshape(img_array2.shape[0], img_rows, img_cols,3)
 
 					img_array1 = img_array1.astype('float32')
 					img_array1 /= 255
@@ -99,7 +99,7 @@ class DataLoader:
 				label_set = new_labels
 			else:
 				image_set= np.concatenate((image_set, new_images), 0)
-				label_set = np.concatenate((label_set, new_images), 0)
+				label_set = np.concatenate((label_set, new_labels), 0)
 
 		os.chdir(swd) # switch back to previous working directory
 		print('Change directory to ' + os.getcwd())
