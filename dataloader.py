@@ -47,7 +47,7 @@ class DataLoader:
 		print('Change directory to ' + os.getcwd())
 		wd = os.getcwd()
 		if not landmarks:
-			landmarks = os.listdir(wd)
+			landmarks = glob.glob(wd + "/*")
 
 		for landmark in landmarks:
 			new_images = []
