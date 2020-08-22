@@ -2,3 +2,4 @@ pyquaternion
 tensorflow
 keras
 numpy
+matplotlib
