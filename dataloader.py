@@ -197,8 +197,8 @@ class DataLoader:
 			self.input_shape = (img_rows, img_cols, 3)
 			formatting = True
 
-		self.train_data, self.train_labels = self.__load_data("train",["duomo"], img_rows, img_cols)
-		self.test_data, self.test_labels = self.__load_data("test",["duomo"], img_rows, img_cols)
+		self.train_data, self.train_labels = self.__load_data("train",landmarks, img_rows, img_cols)
+		self.test_data, self.test_labels = self.__load_data("test",landmarks, img_rows, img_cols)
 
 		#labels = self.__load_labels(categoryIDs)
 		#self.train_labels, self.test_labels = self.__organize_labels(labels)
