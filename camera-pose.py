@@ -114,7 +114,7 @@ if __name__ == "__main__":
 	model = Model(inputs=[branch_a, branch_b], outputs=[output])
 
 	loss_fn = tensorflow.keras.losses.mean_squared_error
-	model.compile(loss=loss_fn,
+	model.compile(loss=custom_objective,
 				  optimizer=keras.optimizers.Adam(lr=.0001, decay=.00001),
 				  metrics=['accuracy'])
 
@@ -131,6 +131,8 @@ if __name__ == "__main__":
 				  shuffle=True)
 		model.save_weights(model_name)
 		print("model saved as file", model_name)
+
+	files.download('example.txt')
 
 	pred = model.predict([train_data[:,0], train_data[:,1]])
 	train_trans, train_orient = compute_mean_error(pred, train_labels)
