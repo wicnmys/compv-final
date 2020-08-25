@@ -118,6 +118,7 @@ if __name__ == "__main__":
 				  optimizer=keras.optimizers.Adam(lr=.0001, decay=.00001),
 				  metrics=['accuracy'])
 
+
 	if os.path.isfile(model_name):
 		print("model", model_name, "found")
 		model.load_weights(model_name)
