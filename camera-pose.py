@@ -6,9 +6,6 @@
 
 import numpy as np
 import tensorflow
-import gzip
-import sys
-import pickle
 import keras
 import math
 import os
@@ -17,8 +14,6 @@ import json
 from keras.models import Sequential, Model, load_model
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Conv2D, MaxPooling2D, Input, Lambda
-from keras.utils import np_utils
-from keras.datasets import mnist
 from keras import backend as K
 from dataloader import DataLoader
 
