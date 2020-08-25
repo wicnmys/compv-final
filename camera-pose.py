@@ -132,8 +132,6 @@ if __name__ == "__main__":
 		model.save_weights(model_name)
 		print("model saved as file", model_name)
 
-	files.download('example.txt')
-
 	pred = model.predict([train_data[:,0], train_data[:,1]])
 	train_trans, train_orient = compute_mean_error(pred, train_labels)
 	pred = model.predict([test_data[:,0], test_data[:,1]])
