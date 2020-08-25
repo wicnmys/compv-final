@@ -38,7 +38,7 @@ class DataLoader:
         print('Change directory to ' + os.getcwd())
         wd = os.getcwd()
         if not landmarks:
-            landmarks = [name for name in os.listdir(wd) if os.path.isdir(os.path.join(wd, name))]
+            landmarks = [name for name in os.listdir(wd) if os.path.isdir(os.path.join(wd, name)) and name[0] != '.']
 
         if self.debug:
             landmarks = landmarks[0:min(len(landmarks), 9)]
@@ -55,7 +55,7 @@ class DataLoader:
                 new_labels = np.load("labels%s.npy" % landmark)
             else:
                 img_folders = [name for name in os.listdir(landmark_dir) if
-                               os.path.isdir(os.path.join(landmark_dir, name))]
+                               os.path.isdir(os.path.join(landmark_dir, name)) and name[0] != '.']
                 if landmark == "fine_arts_palace":
                     print(img_folders)
                 if self.debug:
