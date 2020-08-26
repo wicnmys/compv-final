@@ -3,7 +3,7 @@ import keras
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, list_IDs, labels, batch_size=32, dim=(32,32,32), n_channels=1,
+    def __init__(self, list_IDs, labels, list_sources = [],batch_size=32, dim=(32,32,32), n_channels=1,
                  n_classes=10, shuffle=True):
         'Initialization'
         self.dim = dim
@@ -14,6 +14,12 @@ class DataGenerator(keras.utils.Sequence):
         self.n_classes = n_classes
         self.shuffle = shuffle
         self.on_epoch_end()
+        self.enable_sources = False
+
+        # adding the option to retrieve data from saved location (defined in list_sources)
+        if list_sources:
+            self.enable_sources = True
+            self.list_sources = list_sources
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -47,9 +53,14 @@ class DataGenerator(keras.utils.Sequence):
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             # Store sample
-            X[i,] = np.load('data/' + ID + '.npy')
+
+            if self.enable_sources:
+                # load data from defined source
+                X[i,] = np.load(self.list_sources[ID])
+            else:
+                X[i,] = np.load('data/' + ID + '.npy')
 
             # Store class
             y[i] = self.labels[ID]
 
-        return X, keras.utils.to_categorical(y, num_classes=self.n_classes)
+        return X, y
