@@ -96,6 +96,7 @@ if __name__ == "__main__":
 			  'n_channels': 2,
 			  'shuffle': True}
 
+
 	training_generator = DataGenerator(train_labels,train_loc, **params)
 
 
@@ -119,11 +120,10 @@ if __name__ == "__main__":
 	output = Dense(7, kernel_initializer='normal', name='output')(regression)
 	model = Model(inputs=[branch_a, branch_b], outputs=[output])
 
-	loss_fn = tensorflow.keras.losses.mean_squared_error
+
 	model.compile(loss=custom_objective,
 				  optimizer=keras.optimizers.Adam(lr=.0001, decay=.00001),
 				  metrics=['accuracy'])
-
 
 	if os.path.isfile(model_name):
 		print("model", model_name, "found")
