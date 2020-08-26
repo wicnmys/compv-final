@@ -15,7 +15,7 @@ from keras.models import Sequential, Model, load_model
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Conv2D, MaxPooling2D, Input, Lambda
 from keras import backend as K
-from dataloader import DataLoader
+from sourceloader import SourceLoader
 from datagenerator import DataGenerator
 
 beta = 10
@@ -80,13 +80,13 @@ if __name__ == "__main__":
 		debug = True
 
 	img_rows, img_cols = 227, 227
-	category_IDs = []
+	landmarks = []
 	model_name = 'huge_model_10epoch.h5'
 	model = None
 	# load training and testing data:
-	loader = DataLoader("train", category_IDs, img_rows, img_cols,debug)
+	loader = SourceLoader("train", landmarks, debug)
 	sources = loader.get_sources()
-	input_shape = loader.get_input_shape()
+	input_shape = [img_rows, img_cols,3]
 
 
 	# space for testing new data feed

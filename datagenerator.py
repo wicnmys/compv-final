@@ -5,7 +5,7 @@ from pyquaternion import Quaternion
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, sources,batch_size=32, dim=(32,32,32), n_channels=1,
+    def __init__(self, sources,batch_size=32, dim=(32,32,32), n_channels=3,
                  shuffle=True):
         'Initialization'
         self.dim = dim

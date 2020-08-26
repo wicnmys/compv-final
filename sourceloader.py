@@ -5,32 +5,20 @@
 # https://arxiv.org/pdf/1702.01381.pdf
 
 import numpy as np
-import glob, os
+import os
 
 
+class SourceLoader:
 
-from keras import backend as K
-
-
-class DataLoader:
-    input_shape = []
-    label_loc_test = []
-    label_loc_train = []
-    data_loc_test = []
-    data_loc_train = []
-    formatting = False
     debug = True
-    data_load = False
-
     sources = []
-    test_sources = []
 
-    # accepts the name of a directory and the name of a .npy file as strings
+    # accepts the name of a directory and the name of a .npy file as stringsrue
     # loads data from the given .npy if it exists, otherwise loads data from
     # raw images and saves it to a .npy file for future runs
     # returns a numpy array representation of
     # the image set in the given directiory
-    def __load_data(self, directory, landmarks, img_rows, img_cols):
+    def __load_data(self, directory, landmarks):
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
         print('Change directory to ' + os.getcwd())
         sources = []
@@ -40,9 +28,6 @@ class DataLoader:
         wd = os.getcwd()
         if not landmarks:
             landmarks = [name for name in os.listdir(wd) if os.path.isdir(os.path.join(wd, name)) and name[0] != '.']
-
-        if self.debug:
-            landmarks = landmarks[0:min(len(landmarks), 9)]
 
         for landmark in landmarks:
 
@@ -74,17 +59,6 @@ class DataLoader:
             filter = filter[0:max]
         return self.sources[filter]
 
-    def get_input_shape(self):
-        return self.input_shape
-
-    def __init__(self, directory,landmarks, img_rows, img_cols, debug):
-        # preprocess input
-        if K.image_data_format() == 'channels_first':
-            self.input_shape = (3, img_rows, img_cols)
-        else:
-            self.input_shape = (img_rows, img_cols, 3)
-            self.formatting = True
-
+    def __init__(self, directory,landmarks,debug):
         self.debug = debug
-
-        self.sources = self.__load_data(directory, landmarks, img_rows, img_cols)
+        self.sources = self.__load_data(directory, landmarks)
