@@ -2,6 +2,7 @@ import numpy as np
 import keras
 from keras.preprocessing import image
 from pyquaternion import Quaternion
+import os
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
@@ -52,9 +53,9 @@ class DataGenerator(keras.utils.Sequence):
             source = self.sources[ID]
 
             # process images
-            img1 = image.load_img(source + "/inputs/" + "im1.jpg", target_size=self.dim)
+            img1 = image.load_img(os.path.join(source,"inputs","im1.jpg"), target_size=self.dim)
             img1 = image.img_to_array(img1)
-            img2 = image.load_img(source + "/inputs/" + "im2.jpg", target_size=self.dim)
+            img2 = image.load_img(os.path.join(source,"inputs","im2.jpg"), target_size=self.dim)
             img2 = image.img_to_array(img2)
             img1 = img1.astype('float32')
             img1 /= 255
@@ -62,8 +63,8 @@ class DataGenerator(keras.utils.Sequence):
             img2 /= 2255
 
             # process label
-            rotation_matrix = np.load(source + "/GT/GT_R12.npy")
-            translation_vector = np.load(source + "/GT/GT_t12.npy")
+            rotation_matrix = np.load(os.path.join(source,"GT/GT_R12.npy"))
+            translation_vector = np.load(os.path.join(source,"GT/GT_t12.npy"))
             rotation_quaternion = Quaternion(matrix=rotation_matrix).elements
             label = np.append(rotation_quaternion, translation_vector)
 

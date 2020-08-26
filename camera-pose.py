@@ -132,7 +132,6 @@ if __name__ == "__main__":
 				  optimizer=keras.optimizers.Adam(lr=.0001, decay=.00001),
 				  metrics=['accuracy'])
 
-
 	model.fit(training_generator,
 						validation_data=validation_generator, epochs=10)
 
