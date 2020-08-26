@@ -16,6 +16,8 @@ class DataLoader:
     input_shape = []
     train_labels = []
     test_labels = []
+    train_loc = []
+    test_loc = []
     train_data = []
     test_data = []
     input_shape = []
@@ -33,6 +35,7 @@ class DataLoader:
         print('Change directory to ' + os.getcwd())
         image_set = []
         label_set = []
+        loc_set = []
         swd = os.getcwd()  # save current working directory
         os.chdir("data/" + directory)
         print('Change directory to ' + os.getcwd())
@@ -46,6 +49,7 @@ class DataLoader:
         for landmark in landmarks:
             new_images = []
             new_labels = []
+            new_loc = []
 
             os.chdir(wd + "/%s" % landmark)  # switch to directory for image files of each landmark
             print('Change directory to ' + os.getcwd())
@@ -83,6 +87,9 @@ class DataLoader:
 
                     image_tuple = (img_array1, img_array2)
 
+                    np.save("images.npy")
+
+
                     rotation_matrix = np.load(img_folder + "/GT/GT_R12.npy")
                     translation_vector = np.load(img_folder + "/GT/GT_t12.npy")
 
@@ -91,6 +98,7 @@ class DataLoader:
                     label = np.append(rotation_quaternion, translation_vector)
                     new_images.append(image_tuple)
                     new_labels.append(label)
+                    new_loc.append(file_path + "images.npy")
 
                 np.save("data%s.npy" % landmark, new_images);
                 np.save("labels%s.npy" % landmark, new_labels);
@@ -98,9 +106,11 @@ class DataLoader:
             if not np.array(image_set).size:
                 image_set = new_images
                 label_set = new_labels
+                new_loc = new_loc
             else:
                 image_set = np.concatenate((image_set, new_images), 0)
                 label_set = np.concatenate((label_set, new_labels), 0)
+                loc_set = np.concatenate((loc_set, new_loc),0)
 
         os.chdir(swd)  # switch back to previous working directory
         print('Change directory to ' + os.getcwd())
@@ -116,7 +126,7 @@ class DataLoader:
         # image_set = image_set.astype('float32')
         # image_set /= 255
 
-        return np.array(image_set), np.array(label_set)
+        return np.array(image_set), np.array(label_set), np.array(loc_set)
 
     # returns shuffled training and test data consisting of
     # lists of image pairs with indicies [pair_num, image_num, width, height, depth]
@@ -134,6 +144,13 @@ class DataLoader:
             max_test = min(len(self.test_labels), 99)
         return self.train_labels[0:max_train], self.test_labels[0:max_test]
 
+    def get_loc(self):
+        if self.debug:
+            max_train = min(len(self.train_labels), 99)
+            max_test = min(len(self.test_labels), 99)
+
+        return self.train_loc[0:max_train], self.test_loc[0:max_test]
+
     def get_input_shape(self):
         return self.input_shape
 
@@ -147,5 +164,5 @@ class DataLoader:
 
         self.debug = debug
 
-        self.train_data, self.train_labels = self.__load_data("train", landmarks, img_rows, img_cols)
-        self.test_data, self.test_labels = self.__load_data("test", landmarks, img_rows, img_cols)
+        self.train_data, self.train_labels, self.train_loc = self.__load_data("train", landmarks, img_rows, img_cols)
+        self.test_data, self.test_labels, self.test_loc = self.__load_data("test", landmarks, img_rows, img_cols)

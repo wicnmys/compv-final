@@ -16,6 +16,7 @@ from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Conv2D, MaxPooling2D, Input, Lambda
 from keras import backend as K
 from dataloader import DataLoader
+from datagenerator import DataGenerator
 
 beta = 10
 epochs = 10
@@ -87,6 +88,16 @@ if __name__ == "__main__":
 	train_data, test_data = loader.get_data()
 	train_labels, test_labels = loader.get_labels()
 	input_shape = loader.get_input_shape()
+	train_loc, test_loc = loader.get_loc()
+
+	# space for testing new data feed
+	params = {'dim': input_shape,
+			  'batch_size': 32,
+			  'n_channels': 2,
+			  'shuffle': True}
+
+	training_generator = DataGenerator(train_labels,train_loc, **params)
+
 
 	# define structure of convolutional branches
 	conv_branch = create_conv_branch(input_shape)
