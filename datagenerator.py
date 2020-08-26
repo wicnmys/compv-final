@@ -1,16 +1,17 @@
 import numpy as np
 import keras
+from keras.preprocessing import image
+from pyquaternion import Quaternion
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, labels, list_IDs ,batch_size=32, dim=(32,32,32), n_channels=1,
+    def __init__(self, sources,batch_size=32, dim=(32,32,32), n_channels=1,
                  shuffle=True):
         'Initialization'
         self.dim = dim
         self.batch_size = batch_size
-        self.labels = labels
-        self.list_IDs = list_IDs
-        self.indices = list(range(len(list_IDs)))
+        self.sources = sources
+        self.indices = list(range(len(sources)))
         self.n_channels = n_channels
         self.shuffle = shuffle
         self.on_epoch_end()
@@ -42,15 +43,34 @@ class DataGenerator(keras.utils.Sequence):
         # Initialization
         X1 = np.empty((self.batch_size, *self.dim, self.n_channels))
         X2 = np.empty((self.batch_size, *self.dim, self.n_channels))
-        y = np.empty((self.batch_size, len(self.labels[batch[0]])))
+        y = np.empty((self.batch_size, 7))
 
         # Generate data
         for i, ID in enumerate(batch):
             # Store sample
-            img = np.load(self.list_IDs[ID])
-            X1[i,] = img[0]
-            X2[i,] = img[1]
+
+            source = self.sources[ID]
+
+            # process images
+            img1 = image.load_img(source + "/inputs/" + "im1.jpg", target_size=self.dim)
+            img1 = image.img_to_array(img1)
+            img2 = image.load_img(source + "/inputs/" + "im2.jpg", target_size=self.dim)
+            img2 = image.img_to_array(img2)
+            img1 = img1.astype('float32')
+            img1 /= 255
+            img2 = img2.astype('float32')
+            img2 /= 2255
+
+            # process label
+            rotation_matrix = np.load(source + "/GT/GT_R12.npy")
+            translation_vector = np.load(source + "/GT/GT_t12.npy")
+            rotation_quaternion = Quaternion(matrix=rotation_matrix).elements
+            label = np.append(rotation_quaternion, translation_vector)
+
+
+            X1[i,] = img1
+            X2[i,] = img2
             # Store class
-            y[i,] = self.labels[ID]
+            y[i,] = label
 
         return [X1,X2], y

@@ -84,10 +84,10 @@ if __name__ == "__main__":
 	model_name = 'huge_model_10epoch.h5'
 	model = None
 	# load training and testing data:
-	loader = DataLoader(category_IDs, img_rows, img_cols,debug)
-	train_labels, test_labels = loader.get_labels()
+	loader = DataLoader("train", category_IDs, img_rows, img_cols,debug)
+	sources = loader.get_sources()
 	input_shape = loader.get_input_shape()
-	train_loc, test_loc = loader.get_loc()
+
 
 	# space for testing new data feed
 	params = {'dim': [img_rows, img_cols],
@@ -96,19 +96,17 @@ if __name__ == "__main__":
 			  'shuffle': True}
 
 
-	len_data = len(train_labels)
+	len_data = len(sources)
 	numbers = list(range(len_data))
 	np.random.shuffle(numbers)
 	split_data = math.floor(len_data*0.9)
 	train_ids = numbers[0:split_data]
 	val_ids = numbers[split_data+1:len(numbers)]
-	val_labels = train_labels[val_ids]
-	val_loc = train_loc[val_ids]
-	train_labels = train_labels[train_ids]
-	train_loc = train_loc[train_ids]
+	validation_sources = sources[val_ids]
+	training_sources = sources[train_ids]
 
-	training_generator = DataGenerator(train_labels,train_loc, **params)
-	validation_generator = DataGenerator(val_labels,val_loc, **params)
+	training_generator = DataGenerator(training_sources, **params)
+	validation_generator = DataGenerator(validation_sources, **params)
 
 
 	# define structure of convolutional branches
