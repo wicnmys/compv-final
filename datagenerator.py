@@ -10,6 +10,7 @@ class DataGenerator(keras.utils.Sequence):
         self.batch_size = batch_size
         self.labels = labels
         self.list_IDs = list_IDs
+        self.indices = list(range(len(list_IDs)))
         self.n_channels = n_channels
         self.shuffle = shuffle
         self.on_epoch_end()
@@ -17,40 +18,39 @@ class DataGenerator(keras.utils.Sequence):
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-        return int(np.floor(len(self.list_IDs) / self.batch_size))
+        return int(np.floor(len(self.indices) / self.batch_size))
 
     def __getitem__(self, index):
         'Generate one batch of data'
         # Generate indexes of the batch
-        indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
-
-        # Find list of IDs
-        list_IDs_temp = [self.list_IDs[k] for k in indexes]
+        index = self.index[index * self.batch_size:(index + 1) * self.batch_size]
+        batch = [self.indices[k] for k in index]
 
         # Generate data
-        X, y = self.__data_generation(list_IDs_temp)
+        X, y = self.__data_generation(batch)
 
         return X, y
 
     def on_epoch_end(self):
         'Updates indexes after each epoch'
-        self.indexes = np.arange(len(self.list_IDs))
+        self.index = np.arange(len(self.indices))
         if self.shuffle == True:
-            np.random.shuffle(self.indexes)
+            np.random.shuffle(self.index)
 
-    def __data_generation(self, list_IDs_temp):
+    def __data_generation(self, batch):
         'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
         # Initialization
-        X = np.empty((self.batch_size, *self.dim, self.n_channels))
-        y = np.empty((self.batch_size), dtype=int)
+        X1 = np.empty((self.batch_size, *self.dim, self.n_channels))
+        X2 = np.empty((self.batch_size, *self.dim, self.n_channels))
+        y = np.empty((self.batch_size, len(self.labels[batch[0]])))
 
         # Generate data
-        for i, ID in enumerate(list_IDs_temp):
+        for i, ID in enumerate(batch):
             # Store sample
-
-            X[i,] = np.load(self.list_IDs[ID])
-
+            img = np.load(self.list_IDs[ID])
+            X1[i,] = img[0]
+            X2[i,] = img[1]
             # Store class
-            y[i] = self.labels[ID]
+            y[i,] = self.labels[ID]
 
-        return X, y
+        return [X1,X2], y

@@ -85,19 +85,30 @@ if __name__ == "__main__":
 	model = None
 	# load training and testing data:
 	loader = DataLoader(category_IDs, img_rows, img_cols,debug)
-	train_data, test_data = loader.get_data()
 	train_labels, test_labels = loader.get_labels()
 	input_shape = loader.get_input_shape()
 	train_loc, test_loc = loader.get_loc()
 
 	# space for testing new data feed
-	params = {'dim': input_shape,
+	params = {'dim': [img_rows, img_cols],
 			  'batch_size': 32,
-			  'n_channels': 2,
+			  'n_channels': 3,
 			  'shuffle': True}
 
 
+	len_data = len(train_labels)
+	numbers = list(range(len_data))
+	np.random.shuffle(numbers)
+	split_data = math.floor(len_data*0.9)
+	train_ids = numbers[0:split_data]
+	val_ids = numbers[split_data+1:len(numbers)]
+	val_labels = train_labels[val_ids]
+	val_loc = train_loc[val_ids]
+	train_labels = train_labels[train_ids]
+	train_loc = train_loc[train_ids]
+
 	training_generator = DataGenerator(train_labels,train_loc, **params)
+	validation_generator = DataGenerator(val_labels,val_loc, **params)
 
 
 	# define structure of convolutional branches
@@ -108,8 +119,6 @@ if __name__ == "__main__":
 	processed_a = conv_branch(branch_a)
 	processed_b = conv_branch(branch_b)
 
-	train_a = train_data[:,0]
-	train_b = train_data[:,1]
 	# compute distance between outputs of the CNN branches
 	# not sure if euclidean distance is right here
 	# merging or concatenating inputs may be more accurate
@@ -125,28 +134,9 @@ if __name__ == "__main__":
 				  optimizer=keras.optimizers.Adam(lr=.0001, decay=.00001),
 				  metrics=['accuracy'])
 
-	if os.path.isfile(model_name):
-		print("model", model_name, "found")
-		model.load_weights(model_name)
-		print("model loaded from file")
-	else:
-		
-		model.fit([train_data[:,0], train_data[:,1]], train_labels,
-				  batch_size=32,
-				  epochs = epochs,
-				  validation_split=0.1,
-				  shuffle=True)
-		model.save_weights(model_name)
-		print("model saved as file", model_name)
 
-	pred = model.predict([train_data[:,0], train_data[:,1]])
-	train_trans, train_orient = compute_mean_error(pred, train_labels)
-	pred = model.predict([test_data[:,0], test_data[:,1]])
-	test_trans, test_orient = compute_mean_error(pred, test_labels)
-	np.savetxt('pred.txt', pred, delimiter=' ')
-	np.savetxt('labels.txt', test_labels, delimiter=' ')
+	model.fit(training_generator,
+						validation_data=validation_generator, epochs=10)
 
-	print('* Mean translation error on training set: %0.2f' % (train_trans))
-	print('* Mean orientation error on training set: %0.2f' % (train_orient))
-	print('*     Mean translation error on test set: %0.2f' % (test_trans))
-	print('*     Mean orientation error on test set: %0.2f' % (test_orient))
+	model.save_weights(model_name)
+	print("model saved as file", model_name)
