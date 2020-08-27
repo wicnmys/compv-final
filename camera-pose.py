@@ -6,20 +6,17 @@
 
 import numpy as np
 import tensorflow
-import gzip
-import sys
-import pickle
 import keras
 import math
 import os
+import json
 
 from keras.models import Sequential, Model, load_model
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Conv2D, MaxPooling2D, Input, Lambda
-from keras.utils import np_utils
-from keras.datasets import mnist
 from keras import backend as K
-from dataloader import DataLoader
+from sourceloader import SourceLoader
+from datagenerator import DataGenerator
 
 beta = 10
 epochs = 10
@@ -75,15 +72,42 @@ def create_conv_branch(input_shape):
 
 if __name__ == "__main__":
 
+	with open('config.json') as config_file:
+		config = json.load(config_file)
+
+	debug = config['debug']
+	if not isinstance(debug, bool):
+		debug = True
+
 	img_rows, img_cols = 227, 227
-	category_IDs = []
+	landmarks = []
 	model_name = 'huge_model_10epoch.h5'
 	model = None
 	# load training and testing data:
-	loader = DataLoader(category_IDs, img_rows, img_cols)
-	train_data, test_data = loader.get_data()
-	train_labels, test_labels = loader.get_labels()
-	input_shape = loader.get_input_shape()
+	loader = SourceLoader("train", landmarks, debug)
+	sources = loader.get_sources()
+	input_shape = [img_rows, img_cols,3]
+
+
+	# space for testing new data feed
+	params = {'dim': [img_rows, img_cols],
+			  'batch_size': 32,
+			  'n_channels': 3,
+			  'shuffle': True}
+
+
+	len_data = len(sources)
+	numbers = list(range(len_data))
+	np.random.shuffle(numbers)
+	split_data = math.floor(len_data*0.9)
+	train_ids = numbers[0:split_data]
+	val_ids = numbers[split_data+1:len(numbers)]
+	validation_sources = sources[val_ids]
+	training_sources = sources[train_ids]
+
+	training_generator = DataGenerator(training_sources, **params)
+	validation_generator = DataGenerator(validation_sources, **params)
+
 
 	# define structure of convolutional branches
 	conv_branch = create_conv_branch(input_shape)
@@ -93,8 +117,6 @@ if __name__ == "__main__":
 	processed_a = conv_branch(branch_a)
 	processed_b = conv_branch(branch_b)
 
-	train_a = train_data[:,0]
-	train_b = train_data[:,1]
 	# compute distance between outputs of the CNN branches
 	# not sure if euclidean distance is right here
 	# merging or concatenating inputs may be more accurate
@@ -105,33 +127,13 @@ if __name__ == "__main__":
 	output = Dense(7, kernel_initializer='normal', name='output')(regression)
 	model = Model(inputs=[branch_a, branch_b], outputs=[output])
 
-	loss_fn = tensorflow.keras.losses.mean_squared_error
-	model.compile(loss=loss_fn,
+
+	model.compile(loss=custom_objective,
 				  optimizer=keras.optimizers.Adam(lr=.0001, decay=.00001),
 				  metrics=['accuracy'])
 
-	if os.path.isfile(model_name):
-		print("model", model_name, "found")
-		model.load_weights(model_name)
-		print("model loaded from file")
-	else:
-		
-		model.fit([train_data[:,0], train_data[:,1]], train_labels,
-				  batch_size=32,
-				  epochs = epochs,
-				  validation_split=0.1,
-				  shuffle=True)
-		model.save_weights(model_name)
-		print("model saved as file", model_name)
+	model.fit(training_generator,
+						validation_data=validation_generator, epochs=10)
 
-	pred = model.predict([train_data[:,0], train_data[:,1]])
-	train_trans, train_orient = compute_mean_error(pred, train_labels)
-	pred = model.predict([test_data[:,0], test_data[:,1]])
-	test_trans, test_orient = compute_mean_error(pred, test_labels)
-	np.savetxt('pred.txt', pred, delimiter=' ')
-	np.savetxt('labels.txt', test_labels, delimiter=' ')
-
-	print('* Mean translation error on training set: %0.2f' % (train_trans))
-	print('* Mean orientation error on training set: %0.2f' % (train_orient))
-	print('*     Mean translation error on test set: %0.2f' % (test_trans))
-	print('*     Mean orientation error on test set: %0.2f' % (test_orient))
+	model.save_weights(model_name)
+	print("model saved as file", model_name)
