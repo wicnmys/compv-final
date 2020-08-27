@@ -18,7 +18,7 @@ from keras import backend as K
 from sourceloader import SourceLoader
 from datagenerator import DataGenerator
 
-beta = 10
+beta = 500
 epochs = 10
 
 def custom_objective(y_true, y_pred):
