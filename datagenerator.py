@@ -49,33 +49,28 @@ class DataGenerator(keras.utils.Sequence):
         # Generate data
         for i, ID in enumerate(batch):
             # Store sample
+            source = self.sources[ID]
 
-            try:
+            # process images
+            img1 = image.load_img(os.path.join(source,"inputs","im1.jpg"), target_size=self.dim)
+            img1 = image.img_to_array(img1)
+            img2 = image.load_img(os.path.join(source,"inputs","im2.jpg"), target_size=self.dim)
+            img2 = image.img_to_array(img2)
+            img1 = img1.astype('float32')
+            img1 /= 255
+            img2 = img2.astype('float32')
+            img2 /= 2255
 
-                source = self.sources[ID]
-
-                # process images
-                img1 = image.load_img(os.path.join(source,"inputs","im1.jpg"), target_size=self.dim)
-                img1 = image.img_to_array(img1)
-                img2 = image.load_img(os.path.join(source,"inputs","im2.jpg"), target_size=self.dim)
-                img2 = image.img_to_array(img2)
-                img1 = img1.astype('float32')
-                img1 /= 255
-                img2 = img2.astype('float32')
-                img2 /= 2255
-
-                # process label
-                rotation_matrix = np.load(os.path.join(source,"GT/GT_R12.npy"))
-                translation_vector = np.load(os.path.join(source,"GT/GT_t12.npy"))
-                rotation_quaternion = Quaternion(matrix=rotation_matrix).elements
-                label = np.append(rotation_quaternion, translation_vector)
+            # process label
+            rotation_matrix = np.load(os.path.join(source,"GT/GT_R12.npy"))
+            translation_vector = np.load(os.path.join(source,"GT/GT_t12.npy"))
+            rotation_quaternion = Quaternion(matrix=rotation_matrix).elements
+            label = np.append(rotation_quaternion, translation_vector)
 
 
-                X1[i,] = img1
-                X2[i,] = img2
-                # Store class
-                y[i,] = label
-            except:
-                print(source)
+            X1[i,] = img1
+            X2[i,] = img2
+            # Store class
+            y[i,] = label
 
         return [X1,X2], y

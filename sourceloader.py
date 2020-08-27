@@ -38,10 +38,10 @@ class SourceLoader:
             img_folders = [os.path.join(landmark_dir, name) for name in os.listdir(landmark_dir) if
                            os.path.isdir(os.path.join(landmark_dir, name)) and name[0] != '.']
 
-            if not sources:
-                sources = img_folders
+            if not np.array(sources).size:
+                sources = np.array(img_folders)
             else:
-                sources.append(img_folders)
+                sources = np.concatenate((sources, np.array(img_folders)),0)
 
         os.chdir(swd)  # switc backto previous working directory
         print('Change directory to ' + os.getcwd())
