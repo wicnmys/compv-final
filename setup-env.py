@@ -1,11 +1,11 @@
-from io import BytesIO
-#from urllib.request import urlopen
+import pathlib
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 import os
 import json
 import subprocess
 import sys
+from config import Config
 
 def install(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
@@ -54,20 +54,24 @@ def dl_unzip(address,target):
 
 if __name__ == "__main__":
 
-  with open('config.json') as config_file:
-    config = json.load(config_file)
+  config = Config("config.json")
 
-  data_source_train = config['data']['source']['training']
-  data_target_train = config['data']['target']['training']
-  print("Preparing data sources for training.")
-  for data_link in data_source_train:
-    dl_unzip(data_link, data_target_train)
+  filedir = pathlib.Path(__file__).parent.absolute()
+  os.chdir(filedir)
 
-  data_source_test = config['data']['source']['testing']
-  data_target_test = config['data']['target']['testing']
-  print("Preparing data sources for testing.")
-  for data_link in data_source_test:
-    dl_unzip(data_link, data_target_test)
+  if config.is_train():
+    data_source_train = config.get_path('source')['training']
+    data_target_train = config.get_path('target')['training']
+    print("Preparing data sources for training.")
+    for data_link in data_source_train:
+      dl_unzip(data_link, data_target_train)
+
+  if config.is_test():
+    data_source_test = config.get_path('source')['testing']
+    data_target_test = config.get_path('target')['testing']
+    print("Preparing data sources for testing.")
+    for data_link in data_source_test:
+      dl_unzip(data_link, data_target_test)
 
   print("Installing requirements.")
   requirements = open('requirements.txt', 'r')

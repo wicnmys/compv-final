@@ -1,6 +1,8 @@
 # Created by .ignore support plugin (hsz.mobi)
 ## Ignore data files
 data/
+checkpoints/
+output/
 
 ### Python template
 # Byte-compiled / optimized / DLL files

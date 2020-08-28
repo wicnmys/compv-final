@@ -15,8 +15,10 @@ from keras.models import Sequential, Model, load_model
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Conv2D, MaxPooling2D, Input, Lambda
 from keras import backend as K
+
 from sourceloader import SourceLoader
 from datagenerator import DataGenerator
+from config import Config
 
 beta = 10
 epochs = 10
@@ -72,47 +74,35 @@ def create_conv_branch(input_shape):
 
 if __name__ == "__main__":
 
-	with open('config.json') as config_file:
-		config = json.load(config_file)
-
-	debug = config['debug']
-	if not isinstance(debug, bool):
-		debug = True
+	config = Config('config.json')
 
 	img_rows, img_cols = 227, 227
 	landmarks = []
 	model_name = 'huge_model_10epoch.h5'
-	model = None
+
 	# load training and testing data:
-	loader = SourceLoader("train", landmarks, debug)
+	loader = SourceLoader("train", landmarks, config.is_debug())
 	sources = loader.get_sources()
 	input_shape = [img_rows, img_cols,3]
-
-
-	# space for testing new data feed
-	params = {'dim': [img_rows, img_cols],
-			  'batch_size': 32,
-			  'n_channels': 3,
-			  'shuffle': True}
 
 
 	len_data = len(sources)
 	numbers = list(range(len_data))
 	np.random.shuffle(numbers)
-	split_data = math.floor(len_data*0.9)
+	split_data = math.floor(len_data*config.get_parameter('validation_split'))
 	train_ids = numbers[0:split_data]
 	val_ids = numbers[split_data+1:len(numbers)]
 	validation_sources = sources[val_ids]
 	training_sources = sources[train_ids]
 
-	training_generator = DataGenerator(training_sources, **params)
-	validation_generator = DataGenerator(validation_sources, **params)
+	training_generator = DataGenerator(training_sources, **config.get_bundle("generator"))
+	validation_generator = DataGenerator(validation_sources, **config.get_bundle("generator"))
 
 
 	# define structure of convolutional branches
 	conv_branch = create_conv_branch(input_shape)
-	branch_a = Input(shape=input_shape)
-	branch_b = Input(shape=input_shape)
+	branch_a = Input(shape=config.get_parameter("input_shape"))
+	branch_b = Input(shape=config.get_parameter("input_shape"))
 
 	processed_a = conv_branch(branch_a)
 	processed_b = conv_branch(branch_b)
@@ -127,13 +117,15 @@ if __name__ == "__main__":
 	output = Dense(7, kernel_initializer='normal', name='output')(regression)
 	model = Model(inputs=[branch_a, branch_b], outputs=[output])
 
+	cp_callback = tensorflow.keras.callbacks.ModelCheckpoint(**config.get_bundle("checkpoint"))
 
 	model.compile(loss=custom_objective,
 				  optimizer=keras.optimizers.Adam(lr=.0001, decay=.00001),
 				  metrics=['accuracy'])
 
 	model.fit(training_generator,
-						validation_data=validation_generator, epochs=10)
+						validation_data=validation_generator, epochs=10,
+			  callbacks=[cp_callback])
 
 	model.save_weights(model_name)
 	print("model saved as file", model_name)

@@ -26,7 +26,8 @@
     "target": {
       "training": "data/train",
       "testing": "data/test"
-    }
+    },
+    "output":  "/content/drive/My Drive/compv/"
   },
   "parameters": {
     "epochs" : 10,
@@ -43,5 +44,7 @@
     }
 
   },
-  "debug": false
+  "debug": true,
+  "test" : false,
+  "train": true
 }
