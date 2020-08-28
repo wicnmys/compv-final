@@ -35,7 +35,13 @@
     "shuffle": true,
     "dim": [227,227],
     "landmarks": [],
-    "beta": 10
+    "beta": 10,
+    "checkpoint": {
+      "save_freq": "epoch",
+      "period": 1,
+      "path": "/content/drive/My Drive/compv/checkpoints/"
+    }
+
   },
   "debug": false
 }
