@@ -21,9 +21,30 @@ from keras.utils import np_utils
 from keras.datasets import mnist
 from keras import backend as K
 from dataloader import DataLoader
+from tensorflow.transformations import quaternion_matrix
 
 beta = 10
+gamma = 10
 epochs = 10
+
+def combined_loss_function(y_true, y_pred, x1, x2):
+	y_diff=y_pred-y_true
+	translation = np.array(y_diff[:2])
+	orientationQuaternion = np.array(y_diff[3:])
+	orientationMatrix = quaternion_matrix(orientationQuaternion)
+	P1 = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]]
+	P2 = np.apend(orientationMatrix, translation, axis=1)
+	P2_1 = P2[1,:]
+	P2_2 = P2[2,:]
+	P2_3 = P2[3,:]
+
+	#sum the reprojection error over all point pairs
+	for j in range(num of points):
+		P1 * X(j) = x1(j)  # need to find a way to get X from x1 using P1
+		reprojection += K.sqrt(K.square(x1(j) - (P2_1 * X(j)) / (P2_3 * X(j))) + K.square(x2(j) - (P2_2 * X(j)) / (P2_3 * X(j))))
+
+	return K.mean(translation + (beta * orientationQuaternion) + (gamma * reprojection))
+
 
 def custom_objective(y_true, y_pred):
 	error = K.square(y_pred - y_true)
