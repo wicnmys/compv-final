@@ -74,16 +74,14 @@ def create_conv_branch(input_shape):
 
 if __name__ == "__main__":
 
+	# load and save configuration
 	config = Config('config.json')
-
-	img_rows, img_cols = 227, 227
-	landmarks = []
-	model_name = 'huge_model_10epoch.h5'
+	config.save()
 
 	# load training and testing data:
-	loader = SourceLoader("train", landmarks, config.is_debug())
+	loader = SourceLoader("train", config.get_parameter("landmarks"), config.is_debug())
 	sources = loader.get_sources()
-	input_shape = [img_rows, img_cols,3]
+	input_shape = config.input_shape()
 
 
 	len_data = len(sources)
@@ -124,8 +122,6 @@ if __name__ == "__main__":
 				  metrics=['accuracy'])
 
 	model.fit(training_generator,
-						validation_data=validation_generator, epochs=10,
+						validation_data=validation_generator, epochs=config.get_parameter("epochs"),
 			  callbacks=[cp_callback])
 
-	model.save_weights(model_name)
-	print("model saved as file", model_name)
