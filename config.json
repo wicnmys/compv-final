@@ -28,5 +28,14 @@
       "testing": "data/test"
     }
   },
+  "parameters": {
+    "epochs" : 10,
+    "validation_split": 0.9,
+    "batch_size": 32,
+    "shuffle": true,
+    "dim": [227,227],
+    "landmarks": [],
+    "beta": 10
+  },
   "debug": false
 }
