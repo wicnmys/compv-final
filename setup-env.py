@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
   config = Config("config.json")
 
-  filedir = pathlib.Path(__file__).parent.absolute()
+  filedir = str(pathlib.Path(__file__).parent.absolute())
   os.chdir(filedir)
 
   if config.is_train():

@@ -75,7 +75,7 @@ class Config:
         return self._parameters[property_name]
 
     def get_path(self, property_name):
-        if property_name not in self._parameters.keys(): # we don't want KeyError
+        if property_name not in self._data.keys(): # we don't want KeyError
             return None  # just return None if not found
         return self._data[property_name]
 
