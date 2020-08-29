@@ -67,7 +67,7 @@ def combined_loss_function(y_true, y_pred, x1, x2, K1, K2):
 	# sum the reprojection error over all reprojected points relative to given 2D points of camera 2
 	reprojection_error = 0
 	for j in range(X.size):
-		reprojection_error += K.sqrt(K.square(x1[j] - (P2_1 * X[j]) / (P2_3 * X[j])) + K.square(x2(j) - (P2_2 * X[j]) / (P2_3 * X[j])))
+		reprojection_error += K.sqrt(K.square(x1[j] - (P2_1 * X[j]) / (P2_3 * X[j])) + K.square(x2[j] - (P2_2 * X[j]) / (P2_3 * X[j])))
 
 	return K.mean(translation_error + (beta * orientation_quaternion_error) + (gamma * reprojection_error))
 
