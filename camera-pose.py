@@ -10,6 +10,7 @@ import keras
 import math
 import os
 import json
+import re
 
 from keras.models import Sequential, Model, load_model
 from keras.layers import Dense, Dropout, Activation, Flatten
@@ -133,15 +134,22 @@ if __name__ == "__main__":
                   optimizer=keras.optimizers.Adam(lr=.0001, decay=.00001),
                   metrics=['accuracy'])
 
+    initial_epoch = 0
     latest = tensorflow.train.latest_checkpoint(config.checkpoint_path())
     if latest:
         print("found existing weights, loading...")
         model.load_weights(latest)
+        found_num = re.search(r'\d+', os.path.basename(latest))
+        if found_num:
+            checkpoint_id = int(found_num.group(0))
+            initial_epoch = checkpoint_id
+
         # Re-evaluate the model
         #loss, acc = model.evaluate(validation_generator)
         #print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
 
     model.fit(training_generator,
                         validation_data=validation_generator, epochs=config.get_parameter("epochs"),
+              initial_epoch=initial_epoch,
               callbacks=[cp_callback])
 
