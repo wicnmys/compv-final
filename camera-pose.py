@@ -22,28 +22,75 @@ from keras.datasets import mnist
 from keras import backend as K
 from dataloader import DataLoader
 from tensorflow.transformations import quaternion_matrix
+from scipy.linalg import svd
 
 beta = 10
 gamma = 10
 epochs = 10
 
-def combined_loss_function(y_true, y_pred, x1, x2):
-	y_diff=y_pred-y_true
-	translation = np.array(y_diff[:2])
-	orientationQuaternion = np.array(y_diff[3:])
-	orientationMatrix = quaternion_matrix(orientationQuaternion)
+
+def pflat(a):
+	return a/a[-1]
+
+
+def combined_loss_function(y_true, y_pred, x1, x2, K1, K2):
+	# extract t,R errors
+	y_diff=K.square(y_pred-y_true)
+	translation_error = K.sqrt(y_diff[0]+y_diff[1]+y_diff[2])
+	orientation_quaternion_error = K.sqrt(y_diff[3]+y_diff[4]+y_diff[5]+y_diff[6])
+
+	# extract camera matrices P1,P2
 	P1 = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]]
-	P2 = np.apend(orientationMatrix, translation, axis=1)
+	orientation_matrix = quaternion_matrix(y_pred[3:])
+	P2 = np.apend(orientation_matrix, translation_error, axis=1)
 	P2_1 = P2[1,:]
 	P2_2 = P2[2,:]
 	P2_3 = P2[3,:]
 
-	#sum the reprojection error over all point pairs
-	for j in range(num of points):
-		P1 * X(j) = x1(j)  # need to find a way to get X from x1 using P1
-		reprojection += K.sqrt(K.square(x1(j) - (P2_1 * X(j)) / (P2_3 * X(j))) + K.square(x2(j) - (P2_2 * X(j)) / (P2_3 * X(j))))
+	# normalize the given 2D points and cameras
+	x1normalized = np.linalg.inv(K1)*x1
+	x2normalized = np.linalg.inv(K2)*x2
+	P1normalized = np.linalg.inv(K1)*P1
+	P2normalized = np.linalg.inv(K2)*P2
 
-	return K.mean(translation + (beta * orientationQuaternion) + (gamma * reprojection))
+	# Triangulate the 3D points using the two camera matrices and the given 2D points
+	X = np.zeros([4, x1.len])  # this is the array of 3D points
+	for i in range(x1.len):
+		Mi = np.zeros([6, 6])
+		Mi[:6, :4] = np.append(P1normalized, P2normalized, axis=0)
+		Mi[:, 5] = [[-x1normalized[:, i]], [0], [0], [0]]
+		Mi[:, 6] = [[0], [0], [0], -x2normalized[:, i]]
+		U, s, VT = svd(Mi)
+		solution = VT[:, -1]
+		X[:, i] = pflat(solution[1:4])
+
+	# sum the reprojection error over all reprojected points relative to given 2D points of camera 2
+	reprojection_error = 0
+	for j in range(X.size):
+		reprojection_error += K.sqrt(K.square(x1[j] - (P2_1 * X[j]) / (P2_3 * X[j])) + K.square(x2(j) - (P2_2 * X[j]) / (P2_3 * X[j])))
+
+	return K.mean(translation_error + (beta * orientation_quaternion_error) + (gamma * reprojection_error))
+
+
+def combined_loss_fucntion2(y_true, y_pred, x1, x2, K1, K2):
+	# extract t,R errors
+	y_diff=K.square(y_pred-y_true)
+	translation_error = K.sqrt(y_diff[0]+y_diff[1]+y_diff[2])
+	orientation_quaternion_error = K.sqrt(y_diff[3]+y_diff[4]+y_diff[5]+y_diff[6])
+
+	# calculate fundamental matrix
+	t = y_pred[:3]
+	R = quaternion_matrix(y_pred[3:])
+	t_skew=[[0, -t[2], t[1]],[t[2], 0, -t[0]],[-t[1], t[0], 0]]
+	E = np.matmul(t_skew, R)
+	K2_Tinv = np.linalg.inv(np.transpose(K2))
+	K1_inv = np.linalg.inv(K1)
+	F = np.matmul(K2_Tinv, E, K1_inv)
+
+	# calculate the epipolar constraint error
+	constraint_error = np.matmul(np.transpose(x1), F, x2)
+
+	return K.mean(translation_error + (beta * orientation_quaternion_error) + (gamma * constraint_error))
 
 
 def custom_objective(y_true, y_pred):
