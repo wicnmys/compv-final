@@ -23,6 +23,8 @@ from config import Config
 beta = 10
 epochs = 10
 
+
+
 def custom_objective(y_true, y_pred):
 	error = K.square(y_pred - y_true)
 	transMag = K.sqrt(error[0] + error[1] + error[2])
@@ -72,56 +74,74 @@ def create_conv_branch(input_shape):
 	model.add(MaxPooling2D(pool_size=(3,3), strides=2))
 	return model
 
+def checkpoint_path(config):
+    path = ""
+    if config.checkpoint_path():
+        folder = config.checkpoint_path()
+        with open(folder) as config_file:
+            loc = json.load(config_file)
+            if "model_checkpoint_path" in loc.keys():
+                path = os.path.join(folder, loc["model_checkpoint_path"])
+    return path
+
 if __name__ == "__main__":
 
-	# load and save configuration
-	config = Config('config.json')
-	config.save()
+    # load and save configuration
+    config = Config('config.json')
+    config.save()
 
-	# load training and testing data:
-	loader = SourceLoader("train", config.get_parameter("landmarks"), config.is_debug())
-	sources = loader.get_sources()
-	input_shape = config.input_shape()
-
-
-	len_data = len(sources)
-	numbers = list(range(len_data))
-	np.random.shuffle(numbers)
-	split_data = math.floor(len_data*config.get_parameter('validation_split'))
-	train_ids = numbers[0:split_data]
-	val_ids = numbers[split_data+1:len(numbers)]
-	validation_sources = sources[val_ids]
-	training_sources = sources[train_ids]
-
-	training_generator = DataGenerator(training_sources, **config.get_bundle("generator"))
-	validation_generator = DataGenerator(validation_sources, **config.get_bundle("generator"))
+    # load training and testing data:
+    loader = SourceLoader("train", config.get_parameter("landmarks"), config.is_debug())
+    sources = loader.get_sources()
+    input_shape = config.input_shape()
 
 
-	# define structure of convolutional branches
-	conv_branch = create_conv_branch(input_shape)
-	branch_a = Input(shape=config.get_parameter("input_shape"))
-	branch_b = Input(shape=config.get_parameter("input_shape"))
+    len_data = len(sources)
+    numbers = list(range(len_data))
+    np.random.shuffle(numbers)
+    split_data = math.floor(len_data*config.get_parameter('validation_split'))
+    train_ids = numbers[0:split_data]
+    val_ids = numbers[split_data+1:len(numbers)]
+    validation_sources = sources[val_ids]
+    training_sources = sources[train_ids]
 
-	processed_a = conv_branch(branch_a)
-	processed_b = conv_branch(branch_b)
+    training_generator = DataGenerator(training_sources, **config.get_bundle("generator"))
+    validation_generator = DataGenerator(validation_sources, **config.get_bundle("generator"))
 
-	# compute distance between outputs of the CNN branches
-	# not sure if euclidean distance is right here
-	# merging or concatenating inputs may be more accurate
-	#distance = Lambda(euclidean_distance, 
-	#				  output_shape = eucl_dist_output_shape)([processed_a, processed_b])
-	regression = keras.layers.concatenate([processed_a, processed_b])
-	regression = Flatten()(regression) # may not be necessary
-	output = Dense(7, kernel_initializer='normal', name='output')(regression)
-	model = Model(inputs=[branch_a, branch_b], outputs=[output])
+    # define structure of convolutional branches
+    conv_branch = create_conv_branch(input_shape)
+    branch_a = Input(shape=config.get_parameter("input_shape"))
+    branch_b = Input(shape=config.get_parameter("input_shape"))
 
-	cp_callback = tensorflow.keras.callbacks.ModelCheckpoint(**config.get_bundle("checkpoint"))
+    processed_a = conv_branch(branch_a)
+    processed_b = conv_branch(branch_b)
 
-	model.compile(loss=custom_objective,
-				  optimizer=keras.optimizers.Adam(lr=.0001, decay=.00001),
-				  metrics=['accuracy'])
+    # compute distance between outputs of the CNN branches
+    # not sure if euclidean distance is right here
+    # merging or concatenating inputs may be more accurate
+    #distance = Lambda(euclidean_distance,
+    #				  output_shape = eucl_dist_output_shape)([processed_a, processed_b])
+    regression = keras.layers.concatenate([processed_a, processed_b])
 
-	model.fit(training_generator,
-						validation_data=validation_generator, epochs=config.get_parameter("epochs"),
-			  callbacks=[cp_callback])
+    regression = Flatten()(regression) # may not be necessary
+    output = Dense(7, kernel_initializer='normal', name='output')(regression)
+    model = Model(inputs=[branch_a, branch_b], outputs=[output])
+
+    cp_callback = tensorflow.keras.callbacks.ModelCheckpoint(**config.get_bundle("checkpoint"))
+
+    model.compile(loss=custom_objective,
+                  optimizer=keras.optimizers.Adam(lr=.0001, decay=.00001),
+                  metrics=['accuracy'])
+
+    latest = tensorflow.train.latest_checkpoint(config.checkpoint_path())
+    if latest:
+        print("found existing weights, loading...")
+        model.load_weights(latest)
+        # Re-evaluate the model
+        #loss, acc = model.evaluate(validation_generator)
+        #print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
+
+    model.fit(training_generator,
+                        validation_data=validation_generator, epochs=config.get_parameter("epochs"),
+              callbacks=[cp_callback])
 

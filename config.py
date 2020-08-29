@@ -114,6 +114,12 @@ class Config:
 
         return self._config["data"]["output"]
 
+    def checkpoint_path(self):
+        if os.path.isdir(os.path.join(self.__path(), self._config["id"])):
+            return os.path.join(self.__path(), self._config["id"])
+        else:
+            return ""
+
     def get_bundle(self, className):
         if className == "generator":
             return {'dim': self._config["parameters"]["dim"],
