@@ -24,8 +24,6 @@ from config import Config
 beta = 10
 epochs = 10
 
-
-
 def custom_objective(y_true, y_pred):
 	error = K.square(y_pred - y_true)
 	transMag = K.sqrt(error[0] + error[1] + error[2])

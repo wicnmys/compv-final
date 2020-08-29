@@ -32,7 +32,7 @@ class Config:
             "training": "data/train",
             "testing": "data/test"
         },
-        "output": "/content/drive/My Drive/compv/"
+        "output": "/content/drive/My Drive/"
     },
         "parameters": {
             "epochs": 10,
@@ -47,7 +47,6 @@ class Config:
             "checkpoint": {
                 "save_freq": "epoch",
                 "period": 1,
-                "identifier": uuid.uuid1().hex,
                 "filename": "cp-{epoch:04d}.ckpt",
                 "save_weights_only": True,
                 "verbose": 1
@@ -64,10 +63,10 @@ class Config:
             with open(path) as config_file:
                 config = json.load(config_file)
                 self._config = self.__extract(self._config, config)
-            if self._config["id"] == "":
-                uid = uuid.uuid1().hex
-                print("Generating new ID: " + uid)
-                self._config["id"] = uid
+        if self._config["id"] == "":
+            uid = uuid.uuid1().hex
+            print("Generating new ID: " + uid)
+            self._config["id"] = uid
 
     def get_parameter(self, property_name):
         if property_name not in self._config["parameters"].keys():  # we don't want KeyError
