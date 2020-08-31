@@ -3,6 +3,7 @@ import keras
 from keras.preprocessing import image
 from pyquaternion import Quaternion
 import os
+import random
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
@@ -45,8 +46,10 @@ class DataGenerator(keras.utils.Sequence):
         X1 = np.empty((self.batch_size, *self.dim, self.n_channels))
         X2 = np.empty((self.batch_size, *self.dim, self.n_channels))
         y = np.empty((self.batch_size, 7))
-        y1 = np.empty((self.batch_size, 100, 3))
-        y2 = np.empty((self.batch_size, 100, 3))
+        p1 = np.empty((self.batch_size, 300))
+        K1 = np.empty((self.batch_size, 9))
+        p2 = np.empty((self.batch_size, 300))
+        K2 = np.empty((self.batch_size, 9))
 
         # Generate data
         for i, ID in enumerate(batch):
@@ -70,11 +73,17 @@ class DataGenerator(keras.utils.Sequence):
             label = np.append(rotation_quaternion, translation_vector)
             point_matches1 = np.load(os.path.join(source,"inputs/points1.npy"))
             point_matches2 = np.load(os.path.join(source,"inputs/points2.npy"))
+            k1 = np.load(os.path.join(source,"inputs/K1.npy"))
+            k2 = np.load(os.path.join(source, "inputs/K2.npy"))
 
-
+            p1[i,] = point_matches1[:,random.sample(range(point_matches1.shape[1]),k=100)].flatten()
+            p2[i,] = point_matches1[:,random.sample(range(point_matches2.shape[1]),k=100)].flatten()
+            K1[i,] = k1.flatten()
+            K2[i,] = k2.flatten()
             X1[i,] = img1
             X2[i,] = img2
+
             # Store class
             y[i,] = label
 
-        return [X1,X2], y
+        return [X1,X2, p1, K1, p2, K2], y
