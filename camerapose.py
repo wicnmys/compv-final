@@ -31,7 +31,7 @@ class CameraPose():
         self._beta = self._config.get_parameter("beta")
 
     def _custom_objective(self,y_true, y_pred):
-        error = K.square(y_pred - y_true)
+        error = K.square(y_pred[:,0:7] - y_true[:,0:7])
         transMag = K.sqrt(error[0] + error[1] + error[2])
         orientMag = K.sqrt(error[3] + error[4] + error[5] + error[6])
         return K.mean(transMag + (self._beta * orientMag))
@@ -59,6 +59,11 @@ class CameraPose():
                          activation='relu'))
         # replace with SPP if possible
         model.add(MaxPooling2D(pool_size=(3,3), strides=2))
+        return model
+
+    def _create_do_nothing(self,input_shape):
+        model = Sequential()
+        model.add(Lambda(lambda x: x))
         return model
 
     def _checkpoint_path(self,config):
@@ -97,11 +102,28 @@ class CameraPose():
 
         # define structure of convolutional branches
         conv_branch = self._create_conv_branch(input_shape)
+        do_nothing_k = self._create_do_nothing([9])
+        do_nothing_p = self._create_do_nothing([300])
+
+
+
         branch_a = Input(shape=config.get_parameter("input_shape"))
         branch_b = Input(shape=config.get_parameter("input_shape"))
 
+        branch_k1  = Input(shape=[9])
+        branch_k2 = Input(shape=[9])
+        branch_p1 = Input(shape=[300])
+        branch_p2 = Input(shape=[300])
+
+
+
         processed_a = conv_branch(branch_a)
         processed_b = conv_branch(branch_b)
+
+        processed_k1  = do_nothing_k(branch_k1)
+        processed_k2 = do_nothing_k(branch_k2)
+        processed_p1 = do_nothing_p(branch_p1)
+        processed_p2 = do_nothing_p(branch_p2)
 
         # compute distance between outputs of the CNN branches
         # not sure if euclidean distance is right here
@@ -111,8 +133,10 @@ class CameraPose():
         regression = keras.layers.concatenate([processed_a, processed_b])
 
         regression = Flatten()(regression) # may not be necessary
-        output = Dense(7, kernel_initializer='normal', name='output')(regression)
-        model = Model(inputs=[branch_a, branch_b], outputs=[output])
+        siamese = Dense(7, kernel_initializer='normal', name='output')(regression)
+        output = keras.layers.concatenate([siamese,processed_k1,processed_k2,processed_p1,processed_p2])
+
+        model = Model(inputs=[branch_a, branch_b, branch_k1, branch_k2, branch_p1, branch_p2], outputs=[output])
 
         cp_callback = tensorflow.keras.callbacks.ModelCheckpoint(**config.get_bundle("checkpoint"))
 

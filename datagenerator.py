@@ -86,4 +86,4 @@ class DataGenerator(keras.utils.Sequence):
             # Store class
             y[i,] = label
 
-        return [X1,X2, p1, K1, p2, K2], y
+        return [X1,X2, K1, K1, p1, p2], y
