@@ -45,6 +45,8 @@ class DataGenerator(keras.utils.Sequence):
         X1 = np.empty((self.batch_size, *self.dim, self.n_channels))
         X2 = np.empty((self.batch_size, *self.dim, self.n_channels))
         y = np.empty((self.batch_size, 7))
+        y1 = np.empty((self.batch_size, 100, 3))
+        y2 = np.empty((self.batch_size, 100, 3))
 
         # Generate data
         for i, ID in enumerate(batch):
@@ -66,6 +68,8 @@ class DataGenerator(keras.utils.Sequence):
             translation_vector = np.load(os.path.join(source,"GT/GT_t12.npy"))
             rotation_quaternion = Quaternion(matrix=rotation_matrix).elements
             label = np.append(rotation_quaternion, translation_vector)
+            point_matches1 = np.load(os.path.join(source,"inputs/points1.npy"))
+            point_matches2 = np.load(os.path.join(source,"inputs/points2.npy"))
 
 
             X1[i,] = img1
