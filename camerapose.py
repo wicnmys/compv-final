@@ -30,9 +30,6 @@ class CameraPose():
     _beta = 10
     _gamma = 10
 
-    def pflat(self,a):
-        return a / a[-1]
-
     def __init__(self, path):
         self._config = Config(path)
         self._beta = self._config.get_parameter("beta")
@@ -43,6 +40,27 @@ class CameraPose():
         transMag = K.sqrt(error[0] + error[1] + error[2])
         orientMag = K.sqrt(error[3] + error[4] + error[5] + error[6])
         return K.mean(transMag + (self._beta * orientMag))
+
+    def pflat(self,a):
+        return a / a[-1]
+
+    def dot_product(self, v1, v2):
+        return sum((a * b) for a, b in zip(v1, v2))
+
+    def length(self, v):
+        return math.sqrt(self.dot_product(v, v))
+
+    def compute_mean_error(self, y_true, y_pred):
+        trans_error = 0
+        orient_error = 0
+        for i in range(0, y_true.shape[0]):
+            trans_error += math.acos(self.dot_product(y_true[i, :3], y_pred[i, :3]) /
+                                     (self.length(y_true[i, :3]) * self.length(y_pred[i, :3])))
+            orient_error += math.acos(self.dot_product(y_true[i, 3:], y_pred[i, 3:]) /
+                                      (self.length(y_true[i, 3:]) * self.length(y_pred[i, 3:])))
+        mean_trans = trans_error / y_true.shape[0]
+        mean_orient = orient_error / y_true.shape[0]
+        return mean_trans, mean_orient
 
     def _combined_loss_function(self, y_true, y_pred):
         # extract t,R errors
@@ -162,13 +180,22 @@ class CameraPose():
                     path = os.path.join(folder, loc["model_checkpoint_path"])
         return path
 
-    def test(self, ):
+    def test(self, path_weights):
         config = self._config
         loader = SourceLoader("test", config.get_parameter("landmarks"), config.is_debug())
         sources = loader.get_sources()
         input_shape = config.input_shape()
-        training_generator = DataGenerator(sources, **config.get_bundle("generator"))
+        test_generator = DataGenerator(sources, **config.get_bundle("generator"))
+        model = self._generate_model(input_shape)
 
+        latest = tensorflow.train.latest_checkpoint(path_weights)
+        if latest:
+            print("found existing weights, loading...")
+            model.load_weights(latest)
+
+        prediction = model.predict(test_generator)
+        labels = test_generator.get_all_labels()
+        return self.compute_mean_error(labels,prediction)
 
 
     def _generate_model(self, input_shape):
@@ -222,7 +249,7 @@ class CameraPose():
         config = self._config
         config.save()
 
-        # load training and testing data:
+        # load training data
         loader = SourceLoader("train", config.get_parameter("landmarks"), config.is_debug())
         sources = loader.get_sources()
         input_shape = config.input_shape()
