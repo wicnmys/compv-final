@@ -100,7 +100,8 @@ class DataGenerator(keras.utils.Sequence):
             rotation_matrix = np.load(os.path.join(source,"GT/GT_R12.npy"))
             translation_vector = np.load(os.path.join(source,"GT/GT_t12.npy"))
             rotation_quaternion = Quaternion(matrix=rotation_matrix).elements
-            label = np.append(rotation_quaternion, translation_vector)
+            label = np.append(translation_vector,rotation_quaternion)
+
             point_matches1 = np.load(os.path.join(source,"inputs/points1.npy"))
             point_matches2 = np.load(os.path.join(source,"inputs/points2.npy"))
             k1 = np.load(os.path.join(source,"inputs/K1.npy"))
