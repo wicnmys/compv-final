@@ -35,7 +35,6 @@ class CameraPose():
         self._beta = self._config.get_parameter("beta")
 
     def _custom_objective(self,y_true, y_pred):
-        print(y_pred)
         error = K.square(y_pred[:,0:7] - y_true[:,0:7])
         transMag = K.sqrt(error[0] + error[1] + error[2])
         orientMag = K.sqrt(error[3] + error[4] + error[5] + error[6])
