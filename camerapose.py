@@ -260,7 +260,7 @@ class CameraPose():
 
         model = Model(inputs=[branch_a, branch_b, branch_k1, branch_k2, branch_p1, branch_p2], outputs=[output])
 
-        model.compile(loss=self._combined_loss_fucntion2,
+        model.compile(loss=self._custom_objective,
                       optimizer=keras.optimizers.Adam(lr=.0001, decay=.00001),
                       metrics=['accuracy'])
 
