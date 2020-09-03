@@ -18,6 +18,7 @@ from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Conv2D, MaxPooling2D, Input, Lambda
 from keras import backend as K
 
+import tensorflow_graphics.geometry.transformation.rotation_matrix_3d as rm3
 
 from sourceloader import SourceLoader
 from datagenerator import DataGenerator
@@ -69,30 +70,29 @@ class CameraPose():
 
         # extract camera matrices P1,P2
         P1 = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]]
-        quaternion = [Quaternion(x) for x in y_pred[:,3:7]]
-        orientation_matrix = [x.rotation_matrix for x in quaternion]
-        P2 = np.apend(orientation_matrix, translation_error, axis=1)
+        orientation_matrix = rm3.from_quaternion(y_pred[:,3:7])
+        P2 = tensorflow.apend(orientation_matrix, translation_error, axis=1)
         P2_1 = P2[1, :]
         P2_2 = P2[2, :]
         P2_3 = P2[3, :]
 
         K1 = y_pred[:,7:17]
-        K1 = np.reshape(K1,[-1,3,3])
+        K1 = tensorflow.reshape(K1,[-1,3,3])
         K2 = y_pred[:, 17:27]
-        K2 = np.reshape(K2, [-1,3, 3])
+        K2 = tensorflow.reshape(K2, [-1,3, 3])
         x1 = y_pred[:,27:327]
-        x1 = np.reshape(x1,[-1,3,100])
+        x1 = tensorflow.reshape(x1,[-1,3,100])
         x2 = y_pred[:,327:627]
-        x2 = np.reshape(x2,[-1,3,100])
+        x2 = tensorflow.reshape(x2,[-1,3,100])
 
         # normalize the given 2D points and cameras
-        x1normalized = np.linalg.inv(K1) * x1
-        x2normalized = np.linalg.inv(K2) * x2
-        P1normalized = np.linalg.inv(K1) * P1
-        P2normalized = np.linalg.inv(K2) * P2
+        x1normalized = tensorflow.linalg.inv(K1) * x1
+        x2normalized = tensorflow.linalg.inv(K2) * x2
+        P1normalized = tensorflow.linalg.inv(K1) * P1
+        P2normalized = tensorflow.linalg.inv(K2) * P2
 
-        # Triangulate the 3D points using the two camera matrices and the given 2D points
-        X = np.zeros([4, x1.len])  # this is the array of 3D points
+        # Triangulate the 3D points using the two camera matrices and the givehttps://www.mat.univie.ac.at/~gerald/ftp/book-mfi/mfi1.pdfn 2D points
+        X = tensorflow.zeros([4, x1.len])  # this is the array of 3D points
         for i in range(x1.len):
             Mi = np.zeros([6, 6])
             Mi[:6, :4] = np.append(P1normalized, P2normalized, axis=0)
@@ -110,33 +110,58 @@ class CameraPose():
 
         return K.mean(translation_error + (self._beta * orientation_quaternion_error) + (self._gamma * reprojection_error))
 
-    def combined_loss_fucntion2(self, y_true, y_pred):
+    def _combined_loss_fucntion2(self, y_true, y_pred):
         # extract t,R errors
         error = K.square(y_pred[:, 0:7] - y_true[:, 0:7])
         translation_error = K.sqrt(error[0] + error[1] + error[2])
         orientation_quaternion_error = K.sqrt(error[3] + error[4] + error[5] + error[6])
 
-        K1 = y_pred[:,7:17]
-        K1 = np.reshape(K1,[-1,3,3])
-        K2 = y_pred[:, 17:27]
-        K2 = np.reshape(K2, [-1,3, 3])
-        x1 = y_pred[:,27:327]
-        x1 = np.reshape(x1,[-1,3,100])
-        x2 = y_pred[:,327:627]
-        x2 = np.reshape(x2,[-1,3,100])
+
+        K1 = y_pred[:,7:16]
+        K1 = tensorflow.reshape(K1,[-1,3,3])
+        K2 = y_pred[:, 16:25]
+        K2 = tensorflow.reshape(K2, [-1,3, 3])
+        x1 = y_pred[:,25:325]
+        x1 = tensorflow.reshape(x1,[-1,3,100])
+        x2 = y_pred[:,325:625]
+        x2 = tensorflow.reshape(x2,[-1,3,100])
 
         # calculate fundamental matrix
-        t = y_pred[:,:3]
-        quaternion = [Quaternion(x) for x in y_pred[:,3:7]]
-        R = [x.rotation_matrix for x in quaternion]
-        t_skew = [[0, -t[2], t[1]], [t[2], 0, -t[0]], [-t[1], t[0], 0]]
-        E = np.matmul(t_skew, R)
-        K2_Tinv = np.linalg.inv(np.transpose(K2))
-        K1_inv = np.linalg.inv(K1)
-        F = np.matmul(K2_Tinv, E, K1_inv)
+        t = y_pred[:,0:3]
+        #quaternion = y_pred[:,3:7]
+        #tensorflow.map_fn(Quaternion,quaternion)
+        #R = tensorflow.map_fn(lambda x: x.rotation_matrix, quaternion)
+        R = rm3.from_quaternion(y_pred[:,3:7])
+        #R = [x.rotation_matrix for x in quaternion]
+        #t_skew = [[0, -t[2], t[1]], [t[2], 0, -t[0]], [-t[1], t[0], 0]]
+        e1 = tensorflow.repeat([1., 0, 0], repeats=1, axis=0)
+        e2 = tensorflow.repeat([0, 1., 0], repeats=1, axis=0)
+        e3 = tensorflow.repeat([0, 0, 1.], repeats=1, axis=0)
+
+        t_skew = tensorflow.concat([tensorflow.map_fn(lambda x: tensorflow.linalg.cross(x,e1), t),
+                                   tensorflow.map_fn(lambda x: tensorflow.linalg.cross(x, e2), t),
+                                   tensorflow.map_fn(lambda x: tensorflow.linalg.cross(x, e3), t)],axis=1)
+        t_skew = tensorflow.reshape(t_skew, [-1,3,3])
+
+        E = tensorflow.linalg.matmul(t_skew, R)
+        K2_Tinv = tensorflow.linalg.inv(tensorflow.transpose(K2,perm=[0,2,1]))
+        K1_inv = tensorflow.linalg.inv(K1)
+        F = tensorflow.matmul(tensorflow.matmul(K2_Tinv, E), K1_inv)
+
 
         # calculate the epipolar constraint error
-        constraint_error = np.matmul(np.transpose(x1), F, x2)
+        step = tensorflow.linalg.matmul(tensorflow.transpose(x1, perm=[0,2,1]), F)
+        #print(step)
+        #print(x2)
+        constraint_error = tensorflow.math.reduce_sum(tensorflow.linalg.diag_part(tensorflow.linalg.matmul(step, x2)))
+
+        #print(translation_error)
+        #print(orientation_quaternion_error)
+        #print(constraint_error)
+
+        #constraint_error = 2
+
+        print("error run")
 
         return K.mean(translation_error + (self._beta * orientation_quaternion_error) + (self._gamma * constraint_error))
 
@@ -235,7 +260,7 @@ class CameraPose():
 
         model = Model(inputs=[branch_a, branch_b, branch_k1, branch_k2, branch_p1, branch_p2], outputs=[output])
 
-        model.compile(loss=self._custom_objective,
+        model.compile(loss=self._combined_loss_fucntion2,
                       optimizer=keras.optimizers.Adam(lr=.0001, decay=.00001),
                       metrics=['accuracy'])
 
