@@ -34,11 +34,41 @@ class DataGenerator(keras.utils.Sequence):
 
         return X, y
 
+    def get_all_labels(self):
+        'Generate one batch of data'
+        # Generate indexes of the batch
+
+        # Generate data
+        y = self.__data_label_generation(self.indices[0:self.__len__()*self.batch_size])
+
+        return y
+
     def on_epoch_end(self):
         'Updates indexes after each epoch'
         self.index = np.arange(len(self.indices))
         if self.shuffle == True:
             np.random.shuffle(self.index)
+
+    def __data_label_generation(self, batch):
+        'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
+        # Initialization
+        y = np.empty((len(batch), 7))
+
+        # Generate data
+        for i, ID in enumerate(batch):
+            # Store sample
+            source = self.sources[ID]
+
+            # process label
+            rotation_matrix = np.load(os.path.join(source,"GT/GT_R12.npy"))
+            translation_vector = np.load(os.path.join(source,"GT/GT_t12.npy"))
+            rotation_quaternion = Quaternion(matrix=rotation_matrix).elements
+            label = np.append(rotation_quaternion, translation_vector)
+
+            # Store class
+            y[i,] = label
+
+        return y
 
     def __data_generation(self, batch):
         'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
@@ -71,6 +101,7 @@ class DataGenerator(keras.utils.Sequence):
             translation_vector = np.load(os.path.join(source,"GT/GT_t12.npy"))
             rotation_quaternion = Quaternion(matrix=rotation_matrix).elements
             label = np.append(translation_vector, rotation_quaternion)
+
             point_matches1 = np.load(os.path.join(source,"inputs/points1.npy"))
             point_matches2 = np.load(os.path.join(source,"inputs/points2.npy"))
             k1 = np.load(os.path.join(source,"inputs/K1.npy"))
