@@ -53,30 +53,29 @@ class CameraPose():
 
         # extract camera matrices P1,P2
         P1 = [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]]
-        quaternion = [Quaternion(x) for x in y_pred[:,3:7]]
-        orientation_matrix = [x.rotation_matrix for x in quaternion]
-        P2 = np.apend(orientation_matrix, translation_error, axis=1)
+        orientation_matrix = rm3.from_quaternion(y_pred[:,3:7])
+        P2 = tensorflow.apend(orientation_matrix, translation_error, axis=1)
         P2_1 = P2[1, :]
         P2_2 = P2[2, :]
         P2_3 = P2[3, :]
 
         K1 = y_pred[:,7:17]
-        K1 = np.reshape(K1,[-1,3,3])
+        K1 = tensorflow.reshape(K1,[-1,3,3])
         K2 = y_pred[:, 17:27]
-        K2 = np.reshape(K2, [-1,3, 3])
+        K2 = tensorflow.reshape(K2, [-1,3, 3])
         x1 = y_pred[:,27:327]
-        x1 = np.reshape(x1,[-1,3,100])
+        x1 = tensorflow.reshape(x1,[-1,3,100])
         x2 = y_pred[:,327:627]
-        x2 = np.reshape(x2,[-1,3,100])
+        x2 = tensorflow.reshape(x2,[-1,3,100])
 
         # normalize the given 2D points and cameras
-        x1normalized = np.linalg.inv(K1) * x1
-        x2normalized = np.linalg.inv(K2) * x2
-        P1normalized = np.linalg.inv(K1) * P1
-        P2normalized = np.linalg.inv(K2) * P2
+        x1normalized = tensorflow.linalg.inv(K1) * x1
+        x2normalized = tensorflow.linalg.inv(K2) * x2
+        P1normalized = tensorflow.linalg.inv(K1) * P1
+        P2normalized = tensorflow.linalg.inv(K2) * P2
 
-        # Triangulate the 3D points using the two camera matrices and the given 2D points
-        X = np.zeros([4, x1.len])  # this is the array of 3D points
+        # Triangulate the 3D points using the two camera matrices and the givehttps://www.mat.univie.ac.at/~gerald/ftp/book-mfi/mfi1.pdfn 2D points
+        X = tensorflow.zeros([4, x1.len])  # this is the array of 3D points
         for i in range(x1.len):
             Mi = np.zeros([6, 6])
             Mi[:6, :4] = np.append(P1normalized, P2normalized, axis=0)
@@ -236,7 +235,7 @@ class CameraPose():
 
         model = Model(inputs=[branch_a, branch_b, branch_k1, branch_k2, branch_p1, branch_p2], outputs=[output])
 
-        model.compile(loss=self._combined_loss_fucntion2,
+        model.compile(loss=self._combined_loss_function,
                       optimizer=keras.optimizers.Adam(lr=.0001, decay=.00001),
                       metrics=['accuracy'])
 
