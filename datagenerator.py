@@ -64,20 +64,21 @@ class DataGenerator(keras.utils.Sequence):
             img1 = img1.astype('float32')
             img1 /= 255
             img2 = img2.astype('float32')
-            img2 /= 2255
+            img2 /= 255
 
             # process label
             rotation_matrix = np.load(os.path.join(source,"GT/GT_R12.npy"))
             translation_vector = np.load(os.path.join(source,"GT/GT_t12.npy"))
             rotation_quaternion = Quaternion(matrix=rotation_matrix).elements
-            label = np.append(rotation_quaternion, translation_vector)
+            label = np.append(translation_vector, rotation_quaternion)
             point_matches1 = np.load(os.path.join(source,"inputs/points1.npy"))
             point_matches2 = np.load(os.path.join(source,"inputs/points2.npy"))
             k1 = np.load(os.path.join(source,"inputs/K1.npy"))
             k2 = np.load(os.path.join(source, "inputs/K2.npy"))
 
+
             p1[i,] = point_matches1[:,random.sample(range(point_matches1.shape[1]),k=100)].flatten()
-            p2[i,] = point_matches1[:,random.sample(range(point_matches2.shape[1]),k=100)].flatten()
+            p2[i,] = point_matches2[:,random.sample(range(point_matches2.shape[1]),k=100)].flatten()
             K1[i,] = k1.flatten()
             K2[i,] = k2.flatten()
             X1[i,] = img1

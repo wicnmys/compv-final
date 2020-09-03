@@ -99,13 +99,14 @@ class CameraPose():
         translation_error = K.sqrt(error[0] + error[1] + error[2])
         orientation_quaternion_error = K.sqrt(error[3] + error[4] + error[5] + error[6])
 
-        K1 = y_pred[:,7:17]
+
+        K1 = y_pred[:,7:16]
         K1 = tensorflow.reshape(K1,[-1,3,3])
-        K2 = y_pred[:, 17:27]
+        K2 = y_pred[:, 16:25]
         K2 = tensorflow.reshape(K2, [-1,3, 3])
-        x1 = y_pred[:,27:327]
+        x1 = y_pred[:,25:325]
         x1 = tensorflow.reshape(x1,[-1,3,100])
-        x2 = y_pred[:,327:627]
+        x2 = y_pred[:,325:625]
         x2 = tensorflow.reshape(x2,[-1,3,100])
 
         # calculate fundamental matrix
@@ -130,22 +131,20 @@ class CameraPose():
         K1_inv = tensorflow.linalg.inv(K1)
         F = tensorflow.matmul(tensorflow.matmul(K2_Tinv, E), K1_inv)
 
-        print(tensorflow.transpose(x1,perm=[0,2,1]))
-        print(F)
-
-
 
         # calculate the epipolar constraint error
         step = tensorflow.linalg.matmul(tensorflow.transpose(x1, perm=[0,2,1]), F)
-        print(step)
-        print(x2)
+        #print(step)
+        #print(x2)
         constraint_error = tensorflow.math.reduce_sum(tensorflow.linalg.diag_part(tensorflow.linalg.matmul(step, x2)))
 
-        print(translation_error)
-        print(orientation_quaternion_error)
-        print(constraint_error)
+        #print(translation_error)
+        #print(orientation_quaternion_error)
+        #print(constraint_error)
 
         #constraint_error = 2
+
+        print("error run")
 
         return K.mean(translation_error + (self._beta * orientation_quaternion_error) + (self._gamma * constraint_error))
 
@@ -235,7 +234,7 @@ class CameraPose():
 
         model = Model(inputs=[branch_a, branch_b, branch_k1, branch_k2, branch_p1, branch_p2], outputs=[output])
 
-        model.compile(loss=self._combined_loss_function,
+        model.compile(loss=self._combined_loss_fucntion2,
                       optimizer=keras.optimizers.Adam(lr=.0001, decay=.00001),
                       metrics=['accuracy'])
 
