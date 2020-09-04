@@ -52,7 +52,7 @@ class Config:
                 "verbose": 1
             }
         },
-        "debug": False,
+        "debug": True,
         "train": True,
         "test": False,
         "id": ""
