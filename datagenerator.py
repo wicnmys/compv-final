@@ -63,7 +63,7 @@ class DataGenerator(keras.utils.Sequence):
             rotation_matrix = np.load(os.path.join(source,"GT/GT_R12.npy"))
             translation_vector = np.load(os.path.join(source,"GT/GT_t12.npy"))
             rotation_quaternion = Quaternion(matrix=rotation_matrix).elements
-            label = np.append(rotation_quaternion, translation_vector)
+            label = np.append(translation_vector,rotation_quaternion)
 
             # Store class
             y[i,] = label
