@@ -17,6 +17,7 @@ from keras.models import Sequential, Model, load_model
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Conv2D, MaxPooling2D, Input, Lambda
 from keras import backend as K
+import scipy.io as sio
 
 import tensorflow_graphics.geometry.transformation.rotation_matrix_3d as rm3
 
@@ -218,9 +219,15 @@ class CameraPose():
             model.load_weights(latest)
 
         prediction = model.predict(test_generator)
-        labels = test_generator.get_all_labels()
-        return self.compute_mean_error(labels,prediction)
+        prediction = np.array(prediction[:,0:7])
 
+        labels = test_generator.get_all_labels()
+        name, id = test_generator.get_clean_sources()
+        all = {"name": np.array(name, dtype=np.str_), "id": np.array(id, dtype=np.int16), "prediction": np.array(prediction, dtype=np.double)}
+
+        sio.savemat(os.path.join(path_weights, "cameras.mat"), all)
+
+        return self.compute_mean_error(labels,prediction)
 
     def _generate_model(self, input_shape):
 
