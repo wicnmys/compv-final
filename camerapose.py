@@ -30,7 +30,7 @@ class CameraPose():
 
     _config = []
     _beta = 10
-    _gamma = 10
+    _gamma = 1
 
     def __init__(self, path):
         self._config = Config(path)
@@ -139,9 +139,10 @@ class CameraPose():
         e2 = tensorflow.repeat([0, 1., 0], repeats=1, axis=0)
         e3 = tensorflow.repeat([0, 0, 1.], repeats=1, axis=0)
 
-        t_skew = tensorflow.concat([tensorflow.map_fn(lambda x: tensorflow.linalg.cross(x,e1), t),
+        t_skew = tensorflow.stack([tensorflow.map_fn(lambda x: tensorflow.linalg.cross(x,e1), t),
                                    tensorflow.map_fn(lambda x: tensorflow.linalg.cross(x, e2), t),
-                                   tensorflow.map_fn(lambda x: tensorflow.linalg.cross(x, e3), t)],axis=1)
+                                   tensorflow.map_fn(lambda x: tensorflow.linalg.cross(x, e3), t)], axis=1)
+
         t_skew = tensorflow.reshape(t_skew, [-1,3,3])
 
         E = tensorflow.linalg.matmul(t_skew, R)
@@ -152,17 +153,7 @@ class CameraPose():
 
         # calculate the epipolar constraint error
         step = tensorflow.linalg.matmul(tensorflow.transpose(x1, perm=[0,2,1]), F)
-        #print(step)
-        #print(x2)
-        constraint_error = tensorflow.math.reduce_sum(tensorflow.linalg.diag_part(tensorflow.linalg.matmul(step, x2)))
-
-        #print(translation_error)
-        #print(orientation_quaternion_error)
-        #print(constraint_error)
-
-        #constraint_error = 2
-
-        print("error run")
+        constraint_error = K.sqrt(tensorflow.math.reduce_sum(K.square(tensorflow.linalg.diag_part(tensorflow.linalg.matmul(step, x2)))))
 
         return K.mean(translation_error + (self._beta * orientation_quaternion_error) + (self._gamma * constraint_error))
 
@@ -276,7 +267,7 @@ class CameraPose():
 
         model = Model(inputs=[branch_a, branch_b, branch_k1, branch_k2, branch_p1, branch_p2], outputs=[output])
 
-        model.compile(loss=self._custom_objective,
+        model.compile(loss=self._combined_loss_fucntion2,
                       optimizer=keras.optimizers.Adam(lr=.0001, decay=.00001),
                       metrics=['accuracy'])
 
