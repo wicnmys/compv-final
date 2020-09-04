@@ -205,13 +205,7 @@ class CameraPose():
                     path = os.path.join(folder, loc["model_checkpoint_path"])
         return path
 
-    def test(self, path_weights):
-        config = self._config
-        loader = SourceLoader("test", config.get_parameter("landmarks"), config.is_debug())
-        sources = loader.get_sources()
-        input_shape = config.input_shape()
-        test_generator = DataGenerator(sources, **config.get_bundle("generator"))
-        model = self._generate_model(input_shape)
+    def _test_and_save(self, model, test_generator, path_weights):
 
         latest = tensorflow.train.latest_checkpoint(path_weights)
         if latest:
@@ -219,15 +213,30 @@ class CameraPose():
             model.load_weights(latest)
 
         prediction = model.predict(test_generator)
-        prediction = np.array(prediction[:,0:7])
+        prediction = np.array(prediction[:, 0:7])
 
         labels = test_generator.get_all_labels()
         name, id = test_generator.get_clean_sources()
-        all = {"name": np.array(name, dtype=np.str_), "id": np.array(id, dtype=np.int16), "prediction": np.array(prediction, dtype=np.double)}
+        all = {"name": np.array(name, dtype=np.str_), "id": np.array(id, dtype=np.int16),
+               "prediction": np.array(prediction, dtype=np.double)}
 
-        sio.savemat(os.path.join(path_weights, "cameras.mat"), all)
+        base = self._config.get_path("output")
 
-        return self.compute_mean_error(labels,prediction)
+        sio.savemat(os.path.join(base,path_weights, "cameras.mat"), all)
+
+    def test(self):
+        config = self._config
+        loader = SourceLoader("test", config.get_parameter("landmarks"), config.is_debug())
+        sources = loader.get_sources()
+        input_shape = config.input_shape()
+        test_generator = DataGenerator(sources, **config.get_bundle("generator"))
+        model = self._generate_model(input_shape)
+
+        base = config.get_path("output")
+
+        folders = [name for name in os.listdir(base) if os.path.isdir(os.path.join(base, name)) and name[0] != '.']
+        for folder in folders:
+            self._test_and_save(model,test_generator,folder)
 
     def _generate_model(self, input_shape):
 
