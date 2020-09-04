@@ -43,6 +43,12 @@ class DataGenerator(keras.utils.Sequence):
 
         return y
 
+    def get_clean_sources(self):
+        temp = np.array([str.split(path, "/") for path in self.sources])
+        name = temp[0:self.__len__()*self.batch_size,-2]
+        id = temp[0:self.__len__()*self.batch_size,-1]
+        return [name,id]
+
     def on_epoch_end(self):
         'Updates indexes after each epoch'
         self.index = np.arange(len(self.indices))
