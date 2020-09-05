@@ -206,7 +206,6 @@ class CameraPose():
         prediction = model.predict(test_generator)
         prediction = np.array(prediction[:, 0:7])
 
-        labels = test_generator.get_all_labels()
         name, id = test_generator.get_clean_sources()
         all = {"name": np.array(name, dtype=np.str_), "id": np.array(id, dtype=np.int16),
                "prediction": np.array(prediction, dtype=np.double)}

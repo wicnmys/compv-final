@@ -35,7 +35,7 @@ class Config:
         "output": "/content/drive/My Drive/"
     },
         "parameters": {
-            "epochs": 10,
+            "epochs": 80,
             "validation_split": 0.9,
             "batch_size": 32,
             "shuffle": True,
