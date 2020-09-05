@@ -227,6 +227,7 @@ class CameraPose():
 
         folders = [name for name in os.listdir(base) if os.path.isdir(os.path.join(base, name)) and name[0] != '.']
         for folder in folders:
+            print("testing " + folder)
             self._test_and_save(model,test_generator,folder)
 
     def _generate_model(self, input_shape):
