@@ -40,10 +40,10 @@ class Config:
             "batch_size": 32,
             "shuffle": True,
             "n_channels": 3,
-            "dim": [227, 227],
+            "dim": [324, 484],
             "landmarks": [],
             "beta": 10,
-            "input_shape": [227, 227, 3],
+            "input_shape": [324, 484, 3],
             "checkpoint": {
                 "save_freq": "epoch",
                 "period": 1,
