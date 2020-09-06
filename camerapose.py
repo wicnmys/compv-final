@@ -11,7 +11,6 @@ import math
 import os
 import json
 import re
-from pyquaternion import Quaternion
 
 from keras.models import Sequential, Model, load_model
 from keras.layers import Dense, Dropout, Activation, Flatten
@@ -28,6 +27,12 @@ from scipy.linalg import svd
 
 class CameraPose():
 
+    ###################################################################
+    # CAMERAPOSE CLASS
+    # This class trains and tests the model, using the configuration and
+    # datagenerator class.
+    ####################################################################
+
     _config = []
     _beta = 10
     _gamma = 1
@@ -36,11 +41,7 @@ class CameraPose():
         self._config = Config(path)
         self._beta = self._config.get_parameter("beta")
 
-    def _custom_objective(self,y_true, y_pred):
-        error = K.square(y_pred[:,0:7] - y_true[:,0:7])
-        transMag = K.sqrt(error[0] + error[1] + error[2])
-        orientMag = K.sqrt(error[3] + error[4] + error[5] + error[6])
-        return K.mean(transMag + (self._beta * orientMag))
+    ### HELPER FUNCTIONS ###
 
     def pflat(self,a):
         return a / a[-1]
@@ -51,19 +52,30 @@ class CameraPose():
     def length(self, v):
         return math.sqrt(self.dot_product(v, v))
 
-    def compute_mean_error(self, y_true, y_pred):
-        trans_error = 0
-        orient_error = 0
-        for i in range(0, y_true.shape[0]):
-            trans_error += math.acos(self.dot_product(y_true[i, :3], y_pred[i, :3]) /
-                                     (self.length(y_true[i, :3]) * self.length(y_pred[i, :3])))
-            orient_error += math.acos(self.dot_product(y_true[i, 3:], y_pred[i, 3:]) /
-                                      (self.length(y_true[i, 3:]) * self.length(y_pred[i, 3:])))
-        mean_trans = trans_error / y_true.shape[0]
-        mean_orient = orient_error / y_true.shape[0]
-        return mean_trans, mean_orient
+    def _checkpoint_path(self,config):
+        # retrieve the path of the latest checkpoint from checkpoint folder
+        path = ""
+        if config.checkpoint_path():
+            folder = config.checkpoint_path()
+            with open(folder) as config_file:
+                loc = json.load(config_file)
+                if "model_checkpoint_path" in loc.keys():
+                    path = os.path.join(folder, loc["model_checkpoint_path"])
+        return path
+
+    ### ERROR FUNCTIONS ###
+
+    def _custom_objective(self,y_true, y_pred):
+        error = K.square(y_pred[:,0:7] - y_true[:,0:7])
+        transMag = K.sqrt(error[0] + error[1] + error[2])
+        orientMag = K.sqrt(error[3] + error[4] + error[5] + error[6])
+        return K.mean(transMag + (self._beta * orientMag))
 
     def _combined_loss_function(self, y_true, y_pred):
+        ############################
+        # THIS IS A WORK IN PROGRESS
+        ############################
+
         # extract t,R errors
         error = K.square(y_pred[:, 0:7] - y_true[:, 0:7])
         translation_error = K.sqrt(error[0] + error[1] + error[2])
@@ -117,7 +129,8 @@ class CameraPose():
         translation_error = K.sqrt(error[0] + error[1] + error[2])
         orientation_quaternion_error = K.sqrt(error[3] + error[4] + error[5] + error[6])
 
-
+        # extract K1,K2, and all point matches from the prediction
+        # which were passed through the model
         K1 = y_pred[:,7:16]
         K1 = tensorflow.reshape(K1,[-1,3,3])
         K2 = y_pred[:, 16:25]
@@ -129,12 +142,10 @@ class CameraPose():
 
         # calculate fundamental matrix
         t = y_pred[:,0:3]
-        #quaternion = y_pred[:,3:7]
-        #tensorflow.map_fn(Quaternion,quaternion)
-        #R = tensorflow.map_fn(lambda x: x.rotation_matrix, quaternion)
         R = rm3.from_quaternion(y_pred[:,3:7])
-        #R = [x.rotation_matrix for x in quaternion]
-        #t_skew = [[0, -t[2], t[1]], [t[2], 0, -t[0]], [-t[1], t[0], 0]]
+
+        # calculate skew matrix by taking the cross product with the normal basis
+        # t_skew = [e1xt e2xt e3xt]
         e1 = tensorflow.repeat([1., 0, 0], repeats=1, axis=0)
         e2 = tensorflow.repeat([0, 1., 0], repeats=1, axis=0)
         e3 = tensorflow.repeat([0, 0, 1.], repeats=1, axis=0)
@@ -143,11 +154,13 @@ class CameraPose():
                                    tensorflow.map_fn(lambda x: tensorflow.linalg.cross(x, e2), t),
                                    tensorflow.map_fn(lambda x: tensorflow.linalg.cross(x, e3), t)], axis=1)
 
-        t_skew = tensorflow.reshape(t_skew, [-1,3,3])
 
+        # Calculate the essential matrix from the prediction
         E = tensorflow.linalg.matmul(t_skew, R)
         K2_Tinv = tensorflow.linalg.inv(tensorflow.transpose(K2,perm=[0,2,1]))
         K1_inv = tensorflow.linalg.inv(K1)
+
+        # Calculate the fundamental matrix
         F = tensorflow.matmul(tensorflow.matmul(K2_Tinv, E), K1_inv)
 
 
@@ -157,7 +170,10 @@ class CameraPose():
 
         return K.mean(translation_error + (self._beta * orientation_quaternion_error) + (self._gamma * constraint_error))
 
+    ### MODEL FUNCTIONS ###
+
     def _create_conv_branch(self, input_shape):
+        # build the convolutional branches for the siamese network
         model = Sequential()
         model.add(Conv2D(96, kernel_size=(11,11),
                          strides=4, padding='valid',
@@ -177,53 +193,54 @@ class CameraPose():
         model.add(Conv2D(256, kernel_size=(3,3),
                          strides=1, padding='same',
                          activation='relu'))
-        # replace with SPP if possible
         model.add(MaxPooling2D(pool_size=(3,3), strides=2))
         return model
 
     def _create_do_nothing(self,input_shape):
+        # model which does nothing to pass on point correspondences and calibration matrices
         model = Sequential()
         model.add(Lambda(lambda x: x))
         return model
 
-    def _checkpoint_path(self,config):
-        path = ""
-        if config.checkpoint_path():
-            folder = config.checkpoint_path()
-            with open(folder) as config_file:
-                loc = json.load(config_file)
-                if "model_checkpoint_path" in loc.keys():
-                    path = os.path.join(folder, loc["model_checkpoint_path"])
-        return path
-
     def _test_and_save(self, model, test_generator, path_weights):
+        # predict caneraposes for testdata on selected trained model
 
+        # get latest checkpoint from trained model
         latest = tensorflow.train.latest_checkpoint(path_weights)
         if latest:
             print("found existing weights, loading...")
             model.load_weights(latest)
 
+        # predict
         prediction = model.predict(test_generator)
         prediction = np.array(prediction[:, 0:7])
 
+        # save predictions to .mat file to be evaluated further later
         name, id = test_generator.get_clean_sources()
         all = {"name": np.array(name, dtype=np.str_), "id": np.array(id, dtype=np.int16),
                "prediction": np.array(prediction, dtype=np.double)}
-
         base = self._config.get_path("output")
-
         sio.savemat(os.path.join(base,path_weights, "cameras.mat"), all)
 
     def test(self):
+        # go over all output folders (which holds the trained models) and use the weights to
+        # predict the camera pose of each test set
+
+        # load configuration
         config = self._config
+
+        # load sources of the test set
         loader = SourceLoader("test", config.get_parameter("landmarks"), config.is_debug())
         sources = loader.get_sources()
         input_shape = config.input_shape()
+
+        # create data generator for the test set
         test_generator = DataGenerator(sources, **config.get_bundle("generator"))
         model = self._generate_model(input_shape)
 
         base = config.get_path("output")
 
+        # test and save predictions for each trained model defined in output folder
         folders = [name for name in os.listdir(base) if os.path.isdir(os.path.join(base, name)) and name[0] != '.']
         for folder in folders:
             print("testing " + folder)
@@ -241,32 +258,33 @@ class CameraPose():
         branch_a = Input(shape=config.get_parameter("input_shape"))
         branch_b = Input(shape=config.get_parameter("input_shape"))
 
+        # branches of data that is being passed on as is (for use in error function)
         branch_k1 = Input(shape=[9])
         branch_k2 = Input(shape=[9])
         branch_p1 = Input(shape=[300])
         branch_p2 = Input(shape=[300])
 
+        # siamese branches
         processed_a = conv_branch(branch_a)
         processed_b = conv_branch(branch_b)
 
+        # only pass on branches for error function
         processed_k1 = do_nothing_k(branch_k1)
         processed_k2 = do_nothing_k(branch_k2)
         processed_p1 = do_nothing_p(branch_p1)
         processed_p2 = do_nothing_p(branch_p2)
 
-        # compute distance between outputs of the CNN branches
-        # not sure if euclidean distance is right here
-        # merging or concatenating inputs may be more accurate
-        # distance = Lambda(euclidean_distance,
-        #				  output_shape = eucl_dist_output_shape)([processed_a, processed_b])
+        # regression of the siamaese branches
         regression = keras.layers.concatenate([processed_a, processed_b])
-
         regression = Flatten()(regression)  # may not be necessary
         siamese = Dense(7, kernel_initializer='normal', name='output')(regression)
+
+        # concatenate the outputs together
         output = keras.layers.concatenate([siamese, processed_k1, processed_k2, processed_p1, processed_p2])
 
         model = Model(inputs=[branch_a, branch_b, branch_k1, branch_k2, branch_p1, branch_p2], outputs=[output])
 
+        # compile model with selected loss function (move to config)
         model.compile(loss=self._custom_objective,
                       optimizer=keras.optimizers.Adam(lr=.0001, decay=.00001),
                       metrics=['accuracy'])
@@ -285,7 +303,7 @@ class CameraPose():
         sources = loader.get_sources()
         input_shape = config.input_shape()
 
-
+        # split the data into validation and training set
         len_data = len(sources)
         numbers = list(range(len_data))
         np.random.shuffle(numbers)
@@ -295,13 +313,17 @@ class CameraPose():
         validation_sources = sources[val_ids]
         training_sources = sources[train_ids]
 
+        # build data generators
         training_generator = DataGenerator(training_sources, **config.get_bundle("generator"))
         validation_generator = DataGenerator(validation_sources, **config.get_bundle("generator"))
 
         model = self._generate_model(input_shape)
 
+        # define callback  function to save state of the trained model
         cp_callback = tensorflow.keras.callbacks.ModelCheckpoint(**config.get_bundle("checkpoint"))
 
+        # load existing weights if existant according to the configuration
+        # and set number of epoch accordingly
         initial_epoch = 0
         latest = tensorflow.train.latest_checkpoint(config.checkpoint_path())
         if latest:
@@ -312,7 +334,7 @@ class CameraPose():
                 checkpoint_id = int(found_num.group(0))
                 initial_epoch = checkpoint_id
 
-
+        # fit the model
         model.fit(training_generator,
                             validation_data=validation_generator, epochs=config.get_parameter("epochs"),
                   initial_epoch=initial_epoch,

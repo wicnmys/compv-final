@@ -2,10 +2,16 @@ import pathlib
 from urllib.request import urlretrieve
 from zipfile import ZipFile
 import os
-import json
 import subprocess
 import sys
 from config import Config
+
+######################################################################
+# This file set ups the environment. It is relevant for easy use
+# of colab resources. It downloads all sources and unpacks them,
+# according to the configuration. It also installs missing packages,
+# defined  in requirements.txt
+####################################################################
 
 def install(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])

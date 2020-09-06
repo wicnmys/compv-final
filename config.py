@@ -4,6 +4,16 @@ import uuid
 
 
 class Config:
+    ################################################################
+    # CONFIG CLASS
+    # This class is in charge of saving and loading the
+    # configuration of a model. It was originally implemented to
+    # keep track of different parameters (beta, number of epochs)
+    # and do uniquely identify runs and their checkpoints,
+    # as well as provide information for setting up the
+    # environment.
+    ################################################################
+
     _config = {"data": {
         "source": {
             "training": [
@@ -140,6 +150,7 @@ class Config:
             Exception("Bundle does not exist.")
 
     def save(self):
+        # save config file to be able to identify checkpoints
         with open(os.path.join(self.__path(), self._config["id"]) + '/config.json', 'w') as outfile:
             json.dump(self._config, outfile)
 

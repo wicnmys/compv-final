@@ -1,23 +1,20 @@
-# camera-pose.py
-# Andrew Kramer
-
-# loads data and labels for camera pose estimation as presented in
-# https://arxiv.org/pdf/1702.01381.pdf
-
 import numpy as np
 import os
 
 
 class SourceLoader:
+    ##########################################################################################
+    # SOURCE LOADER
+    # This class iterates over all folders provided as a data source for either
+    # testing or training (defined here as directory) and stored the locations for each
+    # data point object ({images, points corr. etc.}) for easy reference in the
+    # data generator
+    ####################################################################################
+
 
     debug = True
     sources = []
 
-    # accepts the name of a directory and the name of a .npy file as stringsrue
-    # loads data from the given .npy if it exists, otherwise loads data from
-    # raw images and saves it to a .npy file for future runs
-    # returns a numpy array representation of
-    # the image set in the given directiory
     def __load_data(self, directory, landmarks):
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
         print('Change directory to ' + os.getcwd())
@@ -49,8 +46,8 @@ class SourceLoader:
         return np.array(sources)
 
 
-    # returns shuffled training and test labels with form:
-    # [x, y, z, q1, q2, q3, q4]
+    # returns shuffled data sources
+    # returns max 99 if debug is true
     def get_sources(self):
         filter = list(range(len(self.sources)))
         if self.debug:

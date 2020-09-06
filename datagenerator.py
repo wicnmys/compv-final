@@ -6,7 +6,12 @@ import os
 import random
 
 class DataGenerator(keras.utils.Sequence):
-    'Generates data for Keras'
+    #############################################################
+    # DATAGENERATOR CLASS
+    # provides the keras model with batches of data
+    # this helps keeping the memory in check when training images
+    #############################################################
+
     def __init__(self, sources,batch_size=32, dim=(32,32,32), n_channels=3,
                  shuffle=True):
         'Initialization'
@@ -35,8 +40,6 @@ class DataGenerator(keras.utils.Sequence):
         return X, y
 
     def get_all_labels(self):
-        'Generate one batch of data'
-        # Generate indexes of the batch
 
         # Generate data
         y = self.__data_label_generation(self.indices[0:self.__len__()*self.batch_size])
@@ -44,9 +47,12 @@ class DataGenerator(keras.utils.Sequence):
         return y
 
     def get_clean_sources(self):
+        # get all source files, where the file names has been cleaned
+
         temp = np.array([str.split(path, "/") for path in self.sources])
         name = temp[0:self.__len__()*self.batch_size,-2]
         id = temp[0:self.__len__()*self.batch_size,-1]
+
         return [name,id]
 
     def on_epoch_end(self):
@@ -56,7 +62,7 @@ class DataGenerator(keras.utils.Sequence):
             np.random.shuffle(self.index)
 
     def __data_label_generation(self, batch):
-        'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
+
         # Initialization
         y = np.empty((len(batch), 7))
 
@@ -77,7 +83,7 @@ class DataGenerator(keras.utils.Sequence):
         return y
 
     def __data_generation(self, batch):
-        'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
+        #'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
         # Initialization
         X1 = np.empty((self.batch_size, *self.dim, self.n_channels))
         X2 = np.empty((self.batch_size, *self.dim, self.n_channels))
@@ -108,20 +114,24 @@ class DataGenerator(keras.utils.Sequence):
             rotation_quaternion = Quaternion(matrix=rotation_matrix).elements
             label = np.append(translation_vector, rotation_quaternion)
 
+            # process point matches
             point_matches1 = np.load(os.path.join(source,"inputs/points1.npy"))
             point_matches2 = np.load(os.path.join(source,"inputs/points2.npy"))
+
+            # process calibration matrices
             k1 = np.load(os.path.join(source,"inputs/K1.npy"))
             k2 = np.load(os.path.join(source, "inputs/K2.npy"))
 
-
+            # flatten point matches and calibration matrices for easy pass through
             p1[i,] = point_matches1[:,random.sample(range(point_matches1.shape[1]),k=100)].flatten()
             p2[i,] = point_matches2[:,random.sample(range(point_matches2.shape[1]),k=100)].flatten()
             K1[i,] = k1.flatten()
             K2[i,] = k2.flatten()
+
             X1[i,] = img1
             X2[i,] = img2
 
-            # Store class
+            # Store label
             y[i,] = label
 
         return [X1,X2, K1, K1, p1, p2], y
